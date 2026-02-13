@@ -211,7 +211,7 @@ BARI/
 ├── Images/              
     ├── test
     ├── train
-    ├── validation
+    
     
 ```
 
@@ -342,7 +342,7 @@ params = {
 4. **Research**: Study correlations between CBC data and visual symptoms
 5. **Medical Education**: Teaching tool for anemia diagnosis
 
-## [Video Demo](https://drive.google.com/drive/folders/1OCYfOGBiTLd0eXly_77tW1mkA4vnmxJc?usp=drive_link)
+## [Video Demo](https://www.loom.com/share/ca95f81569b747c8a631469757e82b0b)
 
 ## [Design] (https://www.figma.com/make/x5FNIZsA2fSg32gtSBGLJ3/Bari-Healthcare-App-Prototype?t=ap3E9oC06VrRMFFs-1)
 

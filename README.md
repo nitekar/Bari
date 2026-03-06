@@ -1,7 +1,7 @@
 
-# 🩺 Anemia Detection System - Bari Project
+# Anemia Detection System - Bari Project
 
-## 📋 Project Overview
+## Project Overview
 
 The **Bari Anemia Detection System** is a machine learning-powered application that predicts the severity of anemia by combining **visual analysis of the inner eyelid** with **clinical tabular data**. The system leverages a **fusion neural network** that integrates:
 
@@ -14,7 +14,7 @@ This system aims to provide a **non-invasive, accessible preliminary assessment*
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```
 INPUT PIPELINE:
@@ -42,7 +42,7 @@ INPUT PIPELINE:
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 - **Multi-modal Prediction**: Combines image and tabular data for robust predictions
 - **Interpretable Results**: Grad-CAM visualization shows which areas of the eyelid contribute to predictions
@@ -52,7 +52,7 @@ INPUT PIPELINE:
 
 ---
 
-## 📊 Model Findings & Results
+## Model Findings & Results
 
 ### Visual Model (MobileNetV2)
 - **Architecture**: Pre-trained MobileNetV2 fine-tuned on eyelid imagery
@@ -79,7 +79,7 @@ INPUT PIPELINE:
 
 ---
 
-## 📊 Model Performance Metrics
+## Model Performance Metrics
 
 ### Tabular Models Performance
 
@@ -90,10 +90,10 @@ INPUT PIPELINE:
 | **XGBoost** | **100%** | **100%** | **100%** | **100%** | **100%** | **1.00** |
 
 **Key Insights:**
-- ✅ **RandomForest** and **XGBoost** achieve perfect classification on tabular features
-- ✅ Strong recall (100%) indicates no missed positive cases (anemia detection)
-- ✅ High precision demonstrates minimal false positives
-- ✅ Perfect AUC indicates excellent class separation
+- **RandomForest** and **XGBoost** achieve perfect classification on tabular features
+- Strong recall (100%) indicates no missed positive cases (anemia detection)
+- High precision demonstrates minimal false positives
+- Perfect AUC indicates excellent class separation
 
 ### Model Selection
 - **Primary Tabular Model**: RandomForest (perfect performance, interpretable feature importance)
@@ -111,7 +111,7 @@ INPUT PIPELINE:
 
 ---
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```
 Bari/
@@ -145,7 +145,7 @@ Bari/
 
 ---
 
-## 🚀 Installation & Setup
+## Installation & Setup
 
 ### Prerequisites
 - Python 3.8+
@@ -182,7 +182,7 @@ pip install -r Bari_api/requirements.txt
 
 ---
 
-## 🏃 How to Run
+## How to Run
 
 ### Option 1: Run the Prediction API
 
@@ -225,7 +225,7 @@ pip install -r Bari_api/requirements.txt
 
 ---
 
-## 📡 API Endpoints
+## API Endpoints
 
 ### POST `/predict/`
 **Predict anemia severity from image and clinical data**
@@ -252,7 +252,7 @@ pip install -r Bari_api/requirements.txt
 
 ---
 
-## 📈 Prediction Output Components
+## Prediction Output Components
 
 | Component | Description |
 |-----------|-------------|
@@ -263,7 +263,7 @@ pip install -r Bari_api/requirements.txt
 
 ---
 
-## 💡 Example Usage
+## Example Usage
 
 ### Using Curl
 ```bash
@@ -287,7 +287,7 @@ print(response.json())
 
 ---
 
-## 🔬 Model Training
+## Model Training
 
 To retrain models on your data:
 
@@ -308,8 +308,29 @@ To retrain models on your data:
    - Save models
 
 ---
+## Dataset Citation
 
-## ⚠️ Clinical Disclaimer
+This project utilizes eyelid imagery and clinical tabular data for anemia detection research. The dataset includes:
+
+**Dataset Components:**
+- **Visual Component**: Eyelid images from anemic and non-anemic individuals (labeled in `data/Images/`)
+- **Tabular Component**: Clinical measurements including age, gender, and hemoglobin (Hb) levels (in `data/Tabular/anemia.csv`)
+
+**Attribution:**
+If you use this project or dataset in your research, please cite:
+
+Asare, Justice Williams; APPIAHENE, PETER; DONKOH, EMMANUEL (2023), “CP-AnemiC (A Conjunctival Pallor) Dataset from Ghana”, Mendeley Data, V1, doi: 10.17632/m53vz6b7fx.1
+
+
+
+
+**Data Rights:**
+- Ensure compliance with institutional review board (IRB) requirements when using medical imagery
+- Personal health information (PHI) should be appropriately de-identified
+- Respect patient privacy and data protection regulations (e.g., HIPAA, GDPR)
+
+---
+## Clinical Disclaimer
 
 **This system is for educational and research purposes only.**
 
@@ -320,13 +341,13 @@ To retrain models on your data:
 
 ---
 
-## 📝 License
+## License
 
 This project is provided as-is for educational and research purposes.
 
 ---
 
-## 👥 Contributors
+## Contributors
 
 - **Project**: Bari Anemia Detection System
 - **Institution**: Capstone Project
@@ -334,7 +355,7 @@ This project is provided as-is for educational and research purposes.
 
 ---
 
-## 📧 Support
+## Support
 
 For issues, questions, or contributions, please refer to the project documentation or contact the development team.
 │
@@ -352,7 +373,7 @@ For issues, questions, or contributions, please refer to the project documentati
 Dataset Requirements
 	•	Image Data: Inner eyelid images, organized by class (Anemic / Non-Anemic). Recommended resolution: 224x224.
 	•	Tabular Data: Age, Gender, Hemoglobin levels.
-	•	Dataset Link: [Insert link here]
+	•	Dataset Link: []
 
 ⸻
 

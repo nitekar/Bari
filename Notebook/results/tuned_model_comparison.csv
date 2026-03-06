@@ -1,0 +1,4 @@
+Model,Accuracy,Macro_F1
+Tuned_Logistic_Regression,0.9225352112676056,0.8962977203108782
+Tuned_Random_Forest,0.9788732394366197,0.9594965675057208
+Tuned_XGBoost,1.0,1.0

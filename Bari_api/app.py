@@ -1,55 +1,30 @@
-from fastapi import FastAPI, UploadFile, Form
-from fastapi.responses import JSONResponse
-import joblib
-import numpy as np
-from utils import preprocess_image, make_gradcam_heatmap, get_nutrition_advice
+from fastapi import FastAPI, UploadFile, File
 import tensorflow as tf
+import os
+from utils import preprocess_image, read_image, predict_class
 
-app = FastAPI(title="Anemia Detection API")
+app = FastAPI()
 
-# Load models
-fusion_model = tf.keras.models.load_model("fusion_model.h5")
-RF_model = joblib.load("RF_model.pkl")
-classes = ["Normal", "Mild", "Moderate", "Severe"]  # Example classes
+# load trained model
+model_path = os.path.join(os.path.dirname(__file__), "../Notebook/models/mobilenetv2_finetuned_visual_model.h5")
+model = tf.keras.models.load_model(model_path)
 
-@app.post("/predict/")
-async def predict_anemia(
-    image: UploadFile,
-    hb: float = Form(...),
-    age: int = Form(...),
-    gender: str = Form(...)
-):
-    # --- Preprocess image ---
-    img_array = preprocess_image(await image.read())
+classes = ["Anemic", "Non-Anemic"]
 
-    # --- Prepare tabular data ---
-    gender_encoded = 1 if gender.lower() == "male" else 0
-    X_tabular = np.array([[hb, age, gender_encoded]])
-    tabular_probs = RF_model.predict_proba(X_tabular)
+@app.get("/")
+def home():
+    return {"message": "Anemia Detection API running"}
 
-    # --- Extract image embeddings ---
-    feature_extractor = tf.keras.models.Model(
-        inputs=fusion_model.input,
-        outputs=fusion_model.layers[-3].output
-    )
-    image_embeds = feature_extractor(img_array)
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)):
+    
+    image = await read_image(file)
 
-    # --- Fusion input ---
-    fusion_input = np.concatenate([image_embeds.numpy(), tabular_probs], axis=1)
-    pred_probs = fusion_model.predict(fusion_input)
-    pred_class_idx = np.argmax(pred_probs)
-    pred_class = classes[pred_class_idx]
+    processed_image = preprocess_image(image)
 
-    # --- Grad-CAM ---
-    heatmap = make_gradcam_heatmap(img_array, fusion_model)
-    heatmap_max = float(np.max(heatmap))
+    label, confidence = predict_class(model, processed_image, classes)
 
-    # --- Nutritional advice ---
-    advice = get_nutrition_advice(pred_class)
-
-    return JSONResponse({
-        "prediction": pred_class,
-        "probabilities": pred_probs.tolist(),
-        "gradcam_max_value": heatmap_max,
-        "nutritional_advice": advice
-    })
+    return {
+        "prediction": label,
+        "confidence": confidence
+    }

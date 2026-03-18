@@ -1,0 +1,97 @@
+{
+  "Normal": {
+    "diagnosis": "Normal",
+    "description": "Hemoglobin levels are within the healthy range. Maintain a balanced diet to sustain good health.",
+    "diet_recommendation": "Maintain a balanced diet rich in iron sources to prevent future deficiency.",
+    "food_list": [
+      "Lean red meat (beef, lamb)",
+      "Poultry (chicken, turkey)",
+      "Fish and seafood",
+      "Legumes (lentils, chickpeas, kidney beans)",
+      "Dark leafy greens (spinach, kale)",
+      "Fortified cereals and bread",
+      "Nuts and seeds (pumpkin seeds, sunflower seeds)",
+      "Dried fruits (raisins, apricots)",
+      "Tofu and tempeh",
+      "Citrus fruits for vitamin C to boost iron absorption"
+    ],
+    "foods_to_avoid": [
+      "Excessive tea or coffee with meals (inhibits iron absorption)",
+      "High-phytate foods in excess without vitamin C pairing"
+    ],
+    "referral_action": "No referral required. Schedule routine check-up in 12 months.",
+    "urgency": "low"
+  },
+  "Mild": {
+    "diagnosis": "Mild Anemia",
+    "description": "Mild reduction in hemoglobin levels. Dietary intervention is the primary recommendation.",
+    "diet_recommendation": "Increase consumption of iron-rich foods. Pair with vitamin C sources to enhance absorption. Avoid iron inhibitors at meal times.",
+    "food_list": [
+      "Beans and lentils (high non-heme iron)",
+      "Spinach, Swiss chard, and dark leafy greens",
+      "Fortified breakfast cereals",
+      "Lean beef and organ meats (liver, kidney)",
+      "Pumpkin seeds and sesame seeds",
+      "Dried apricots, raisins, and prunes",
+      "Tofu and edamame",
+      "Broccoli and Brussels sprouts",
+      "Vitamin C foods: oranges, bell peppers, strawberries, kiwi",
+      "Molasses and dark chocolate (moderate amounts)"
+    ],
+    "foods_to_avoid": [
+      "Tea and coffee during meals",
+      "Calcium-rich foods at the same time as iron-rich meals",
+      "Alcohol"
+    ],
+    "supplements": "Consider iron supplement (ferrous sulphate) under medical supervision if dietary changes are insufficient.",
+    "referral_action": "Recommend follow-up with primary care physician within 4–6 weeks to recheck hemoglobin levels.",
+    "urgency": "low-medium"
+  },
+  "Moderate": {
+    "diagnosis": "Moderate Anemia",
+    "description": "Significant reduction in hemoglobin levels requiring both dietary changes and medical consultation.",
+    "diet_recommendation": "Follow a structured iron-rich diet plan combined with vitamin C at every meal to maximise iron absorption. Medical consultation is recommended.",
+    "food_list": [
+      "Organ meats: liver (beef or chicken) — highest iron content",
+      "Red meat (beef, lamb) — 2–3 servings per week",
+      "Oysters and clams",
+      "Fortified cereals and iron-enriched pasta",
+      "Cooked spinach, lentils, and black beans",
+      "Spirulina and chlorella supplements",
+      "Vitamin C at every meal: tomatoes, citrus, bell peppers",
+      "Pumpkin seeds and hemp seeds",
+      "Quinoa and amaranth",
+      "Molasses-enriched foods"
+    ],
+    "foods_to_avoid": [
+      "Tea, coffee, and cocoa with meals",
+      "Dairy products during iron-rich meals",
+      "Antacids and proton pump inhibitors (if possible)",
+      "Alcohol"
+    ],
+    "supplements": "Iron supplementation (ferrous sulphate or ferrous gluconate) required. Vitamin B12 and folate assessment recommended.",
+    "referral_action": "Refer to physician or haematologist within 2 weeks. Blood work panel required including serum ferritin, iron, and TIBC.",
+    "urgency": "medium"
+  },
+  "Severe": {
+    "diagnosis": "Severe Anemia",
+    "description": "Critically low hemoglobin levels. This is a medical emergency requiring immediate professional intervention.",
+    "diet_recommendation": "Immediate medical care is the priority. Nutritional support should be initiated alongside medical treatment under clinical supervision.",
+    "food_list": [
+      "High-iron foods as tolerated: liver, red meat, legumes",
+      "Iron-fortified liquid nutritional supplements if solid food is not tolerated",
+      "Vitamin C with every meal to maximise iron absorption",
+      "Folate-rich foods: leafy greens, fortified cereals, asparagus",
+      "Vitamin B12 sources: eggs, dairy, meat, or B12-fortified foods",
+      "Easily digestible foods to reduce metabolic load"
+    ],
+    "foods_to_avoid": [
+      "All iron absorption inhibitors: tea, coffee, dairy with meals",
+      "Raw vegetables if digestion is compromised",
+      "Alcohol strictly avoided"
+    ],
+    "supplements": "IV iron therapy or blood transfusion may be required. Erythropoiesis-stimulating agents under specialist care.",
+    "referral_action": "IMMEDIATE MEDICAL REFERRAL required. Emergency evaluation by haematologist or hospital admission may be necessary. Do not delay treatment.",
+    "urgency": "critical"
+  }
+}

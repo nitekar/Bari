@@ -105,7 +105,7 @@ class PredictionResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 def _preprocess_image(image_bytes: bytes) -> np.ndarray:
-    """Decode image bytes, resize to (224, 224) and normalise to [0, 1]."""
+    """Decode image bytes, resize to (224, 224) and normalize to [0, 1]."""
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     img = img.resize(IMAGE_SIZE)
     arr = np.array(img, dtype=np.float32) / 255.0

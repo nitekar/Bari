@@ -14,7 +14,7 @@ async def read_image(file):
 
 def preprocess_image(image):
 
-    image = image.resize((IMG_SIZE, IMG_SIZE))
+    image = image.resize((IMG_SIZE, IMG_SIZE), Image.Resampling.LANCZOS)
 
     image = np.array(image) / 255.0
 
@@ -25,7 +25,7 @@ def preprocess_image(image):
 
 def predict_class(model, image, classes):
 
-    prediction = model.predict(image)
+    prediction = model.predict(image, verbose=0)
 
     predicted_index = np.argmax(prediction)
 

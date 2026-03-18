@@ -1,0 +1,22 @@
+{
+  "Normal": {
+    "diet_recommendation": "Maintain a balanced diet with iron-rich foods.",
+    "food_list": ["lean meat", "legumes", "leafy greens", "fortified cereals"],
+    "referral_action": "No referral needed. Annual routine checkup recommended."
+  },
+  "Mild": {
+    "diet_recommendation": "Increase daily iron-rich food intake.",
+    "food_list": ["spinach", "lentils", "beans", "tofu", "pumpkin seeds"],
+    "referral_action": "Follow up with a general practitioner within 4 weeks."
+  },
+  "Moderate": {
+    "diet_recommendation": "Structured iron-rich diet with Vitamin C to enhance absorption.",
+    "food_list": ["red meat", "fortified cereals", "oranges", "broccoli", "bell peppers"],
+    "referral_action": "Consult a physician within 1\u20132 weeks. Iron supplement may be required."
+  },
+  "Severe": {
+    "diet_recommendation": "Immediate medical attention required. Oral or IV iron therapy likely needed.",
+    "food_list": ["physician-directed diet only"],
+    "referral_action": "URGENT: Refer to hematologist or emergency care immediately."
+  }
+}

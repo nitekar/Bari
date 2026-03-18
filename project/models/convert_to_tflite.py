@@ -1,7 +1,7 @@
 """
 TensorFlow Lite Model Conversion
 ==================================
-Convert a trained Keras model to TFLite with post-training quantisation and
+Convert a trained Keras model to TFLite with post-training quantization and
 evaluate model size and latency on a CPU device.
 
 Usage:
@@ -16,12 +16,12 @@ from pathlib import Path
 
 
 def convert_model(model_path: str, output_dir: str, quantize: bool = True) -> str:
-    """Convert a saved Keras model to TFLite format with optional quantisation.
+    """Convert a saved Keras model to TFLite format with optional quantization.
 
     Args:
         model_path: Path to the .h5 or SavedModel file.
         output_dir: Directory to write the .tflite file.
-        quantize: Apply post-training dynamic range quantisation.
+        quantize: Apply post-training dynamic range quantization.
 
     Returns:
         Path to the generated .tflite file.
@@ -34,7 +34,7 @@ def convert_model(model_path: str, output_dir: str, quantize: bool = True) -> st
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
     if quantize:
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
-        print("Post-training quantisation: ENABLED (dynamic range)")
+        print("Post-training quantization: ENABLED (dynamic range)")
 
     print("Converting …")
     tflite_model = converter.convert()
@@ -124,7 +124,7 @@ def main():
     parser.add_argument(
         "--no_quantize",
         action="store_true",
-        help="Disable post-training quantisation",
+        help="Disable post-training quantization",
     )
     args = parser.parse_args()
 

@@ -102,7 +102,7 @@ def get_model():
 # ---------------------------------------------------------------------------
 
 def preprocess_image(image: Image.Image) -> np.ndarray:
-    """Resize a PIL image to 224×224 and normalise pixels to [0, 1].
+    """Resize a PIL image to 224×224 and normalize pixels to [0, 1].
 
     Args:
         image: PIL Image object (any mode; will be converted to RGB).

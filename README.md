@@ -1,113 +1,69 @@
+# Bari — Anemia Detection System
 
-# Anemia Detection System - Bari Project
+A multimodal machine learning system that predicts **anemia severity** from conjunctiva (inner eyelid) images and patient clinical data. Combines a fine-tuned MobileNetV2 visual model with tabular classifiers in a TFLite fusion network, served via a FastAPI REST API.
+
+---
+
+## Table of Contents
+
+1. [Project Overview](#project-overview)
+2. [System Architecture](#system-architecture)
+3. [Directory Structure](#directory-structure)
+4. [Models](#models)
+5. [Installation](#installation)
+6. [Running the API](#running-the-api)
+7. [API Endpoints](#api-endpoints)
+8. [Input / Output Reference](#input--output-reference)
+9. [Example Requests](#example-requests)
+10. [Generating Model Files from the Notebook](#generating-model-files-from-the-notebook)
+11. [Dataset Citation](#dataset-citation)
+12. [Clinical Disclaimer](#clinical-disclaimer)
+
+---
 
 ## Project Overview
 
-The **Bari Anemia Detection System** is a machine learning-powered application that predicts the severity of anemia by combining **visual analysis of the inner eyelid** with **clinical tabular data**. The system leverages a **fusion neural network** that integrates:
+The system classifies anemia severity into four WHO-aligned categories:
 
-- **Visual Analysis**: Fine-tuned MobileNetV2 model analyzing eyelid images
-- **Clinical Data**: Random Forest model processing age, gender, and hemoglobin levels
-- **Explainability**: Grad-CAM visualization showing which regions of the eyelid influence predictions
-- **Clinical Guidance**: Automated nutritional and lifestyle recommendations based on WHO guidelines
+| Class | Hemoglobin (g/dL) — Female | Hemoglobin (g/dL) — Male |
+|-------|---------------------------|--------------------------|
+| **Normal** | ≥ 12.0 | ≥ 13.5 |
+| **Mild** | 10.0 – 11.9 | 11.0 – 13.4 |
+| **Moderate** | 7.0 – 9.9 | 7.0 – 9.9 |
+| **Severe** | < 7.0 | < 7.0 |
 
-This system aims to provide a **non-invasive, accessible preliminary assessment** of anemia severity, potentially supporting healthcare professionals in early detection and intervention.
+Prediction can be done from:
+- **Tabular data only** (age, gender, optional HB level)
+- **Image only** (conjunctiva photograph)
+- **Multimodal fusion** (image + tabular, best accuracy)
+
+All predictions include nutritional guidance, recommended foods, and a referral action.
 
 ---
 
 ## System Architecture
 
 ```
-INPUT PIPELINE:
-├── Eyelid Image
-│   ├── Image Preprocessing (224×224)
-│   ├── MobileNetV2 Feature Extraction
-│   └── Image Embeddings
+INPUT PIPELINE
+├── Conjunctiva Image (160×160 RGB)
+│   └── MobileNetV2 (TFLite) → Visual embeddings
 │
-├── Patient Tabular Data (Age, Gender, Hemoglobin)
-│   ├── Random Forest Model
-│   └── Probability Predictions
+├── Tabular Features
+│   ├── With HB: [HB_LEVEL, Age(Months), GENDER]  → Random Forest + Scaler
+│   └── No HB:  [Age(Months), GENDER]              → Random Forest + Scaler
 │
-║
-╚══> FUSION LAYER
-     ├── Concatenate Image Embeddings + Tabular Probabilities
-     ├── Fusion Neural Network
-     └── Final Classification
-          │
-          ├─ Predicted Class (Normal, Mild, Moderate, Severe)
-          ├─ Class Probabilities
-          ├─ Grad-CAM Heatmap (visual explanation)
-          ├─ Nutritional Recommendations
-          └─ Clinical Advice
+└── FUSION (TFLite)
+    ├── Image embeddings + Tabular probabilities
+    └── Dense layers → Softmax → {Normal, Mild, Moderate, Severe}
+
+OUTPUT
+├── prediction          — severity class string
+├── confidence          — top-class probability (0–1)
+├── class_probabilities — {Normal, Mild, Moderate, Severe} dict
+├── nutrition           — dietary advice paragraph
+├── recommended_foods   — list of food suggestions
+└── referral_action     — clinical follow-up recommendation
 ```
-
----
-
-## Key Features
-
-- **Multi-modal Prediction**: Combines image and tabular data for robust predictions
-- **Interpretable Results**: Grad-CAM visualization shows which areas of the eyelid contribute to predictions
-- **Clinical Recommendations**: Automatic nutritional and lifestyle advice based on prediction severity
-- **REST API**: FastAPI-based endpoint for easy integration with other systems
-- **Scalable**: Pre-trained MobileNetV2 backbone enables efficient inference
-
----
-
-## Model Findings & Results
-
-### Visual Model (MobileNetV2)
-- **Architecture**: Pre-trained MobileNetV2 fine-tuned on eyelid imagery
-- **Input Size**: 224×224 RGB images
-- **Purpose**: Extract discriminative visual features from eyelid pallor patterns
-- **Performance**: Effective at capturing subtle color and texture variations indicative of hemoglobin levels
-
-### Tabular Model (Random Forest)
-- **Features**: Age, Gender, Hemoglobin Level (Hb)
-- **Purpose**: Predict anemia probability from clinical parameters
-- **Advantage**: Handles non-linear relationships between clinical features and anemia severity
-- **Models Trained**:
-  - LogisticRegression_model.pkl
-  - RandomForest_model.pkl (Primary)
-  - XGBoost_model.pkl
-
-### Fusion Model
-- **Architecture**: Neural network combining image embeddings and tabular probabilities
-- **Output Classes**: 
-  - **Normal**: Hb ≥ 12.0 g/dL (female) / ≥ 13.5 g/dL (male)
-  - **Mild**: Hb 10.0-11.9 / 11.0-13.4 g/dL
-  - **Moderate**: Hb 7.0-9.9 g/dL
-  - **Severe**: Hb < 7.0 g/dL
-
----
-
-## Model Performance Metrics
-
-### Tabular Models Performance
-
-| Model | Accuracy | Precision | Recall | F1-Score | F2-Score | AUC |
-|-------|----------|-----------|--------|----------|----------|-----|
-| **LogisticRegression** | 98.59% | 97.70% | 100% | 98.84% | 99.53% | 1.00 |
-| **RandomForest** | **100%** | **100%** | **100%** | **100%** | **100%** | **1.00** |
-| **XGBoost** | **100%** | **100%** | **100%** | **100%** | **100%** | **1.00** |
-
-**Key Insights:**
-- **RandomForest** and **XGBoost** achieve perfect classification on tabular features
-- Strong recall (100%) indicates no missed positive cases (anemia detection)
-- High precision demonstrates minimal false positives
-- Perfect AUC indicates excellent class separation
-
-### Model Selection
-- **Primary Tabular Model**: RandomForest (perfect performance, interpretable feature importance)
-- **Fallback Models**: XGBoost (alternative), LogisticRegression (lightweight inference)
-
-### Visual Model Performance
-- **MobileNetV2 Fine-tuning**: Optimized for eyelid imagery classification
-- **Feature Extraction**: 1280-dimensional embeddings capture discriminative visual patterns
-- **Validation**: Model validated on held-out eyelid image dataset
-
-### Fusion Model Integration
-- **End-to-End Accuracy**: Combines visual and tabular modalities for robust predictions
-- **Inference Speed**: <1 second per prediction (optimized for clinical deployment)
-- **Cross-Modal Learning**: Learns complementary features from both image and tabular streams
 
 ---
 
@@ -115,235 +71,406 @@ INPUT PIPELINE:
 
 ```
 Bari/
-│
 ├── README.md                          # This file
-├── requirements.txt                   # Project dependencies
+│
+├── app/                               # FastAPI application
+│   ├── main.py                        # Entry point — all 5 endpoints
+│   ├── requirements.txt               # API dependencies
+│   ├── schemas/
+│   │   ├── request.py                 # Pydantic request models
+│   │   └── response.py                # Pydantic response models
+│   ├── services/
+│   │   ├── inference.py               # Model inference logic
+│   │   ├── nutrition.py               # Guidance generation
+│   │   └── preprocessing.py           # Image & tabular preprocessing
+│   └── utils/
+│       ├── image_utils.py
+│       └── tabular_utils.py
+│
+├── models/
+│   └── saved_models/
+│       ├── visual_model.tflite        # MobileNetV2 quantized (image-only)
+│       ├── multimodal_model.tflite    # Fusion model (image + HB + age + gender)
+│       └── multimodal_no_hb_model.tflite  # Fusion model (image + age + gender)
+│
+├── Notebook/
+│   ├── Bari.ipynb                     # Full training notebook
+│   ├── models/
+│   │   ├── tabular_with_hb.pkl        # RF + scaler bundle (HB, Age, Gender)
+│   │   └── tabular_no_hb.pkl          # RF + scaler bundle (Age, Gender)
+│   └── results/                       # Training plots, CSVs, confusion matrices
 │
 ├── data/
 │   ├── Images/
-│   │   ├── Anemic/                   # Eyelid images of anemic patients
-│   │   └── Non-anemic/               # Eyelid images of healthy individuals
+│   │   ├── Anemic/                    # Conjunctiva images — anemic patients
+│   │   └── Non-anemic/                # Conjunctiva images — healthy individuals
 │   └── Tabular/
-│       └── anemia.csv                # Clinical data (Age, Gender, Hb levels)
+│       └── anemia.csv                 # Clinical data (Age, Gender, HB, Severity)
 │
-├── Notebook/
-│   ├── Bari.ipynb                    # Main training & analysis notebook
-│   ├── mobilenetv2_finetuned_visual_model.h5     # Fine-tuned visual model
-│   ├── tabular_model_results.csv     # Tabular model evaluation results
-│   ├── models/
-│   │   ├── RandomForest_model.pkl    # Primary tabular model
-│   │   ├── LogisticRegression_model.pkl
-│   │   ├── XGBoost_model.pkl
-│   │   └── tabular_model_results.pkl
-│   └── results/                       # Training results & visualizations
-│
-└── Bari_api/
-    ├── app.py                        # FastAPI server & prediction endpoint
-    ├── utils.py                      # Utilities: preprocessing, Grad-CAM, recommendations
-    └── requirements.txt              # API-specific dependencies
+├── mobile/                            # React Native mobile client
+└── nutrition/                         # Nutritional guidance data
 ```
 
 ---
 
-## Installation & Setup
+## Models
+
+### Tabular Classifiers (trained in notebook, used by API)
+
+| Model | File | Features | Notes |
+|-------|------|----------|-------|
+| Random Forest + Scaler | `Notebook/models/tabular_with_hb.pkl` | HB_LEVEL, Age(Months), GENDER | Primary model |
+| Random Forest + Scaler | `Notebook/models/tabular_no_hb.pkl` | Age(Months), GENDER | Fallback when HB unavailable |
+| Logistic Regression | `Notebook/results/Tuned_Logistic_Regression.pkl` | Same splits | Reference comparison |
+| XGBoost | `Notebook/results/Tuned_XGBoost.pkl` | Same splits | Reference comparison |
+
+Both `.pkl` files are joblib bundles: `{"model": sklearn_model, "scaler": StandardScaler}`.
+
+### TFLite Models
+
+| File | Input | Use case |
+|------|-------|----------|
+| `visual_model.tflite` | `[1, 160, 160, 3]` float32 | Image-only prediction |
+| `multimodal_model.tflite` | image `[1,160,160,3]` + tabular `[1,3]` | Fusion with HB |
+| `multimodal_no_hb_model.tflite` | image `[1,160,160,3]` + tabular `[1,2]` | Fusion without HB |
+
+---
+
+## Installation
 
 ### Prerequisites
-- Python 3.8+
-- pip or conda
-- 2GB+ RAM (for model inference)
 
-### Step 1: Clone & Navigate
+- Python 3.9 – 3.11 (TensorFlow required for image/multimodal endpoints)
+- Python 3.12+ works for tabular-only mode (TF skipped automatically at startup)
+- pip ≥ 23
+
+### Steps
+
 ```bash
-cd c:\Users\USER\Capstone\Bari
+# 1. Clone / navigate to the project root
+cd Bari
+
+# 2. Create and activate a virtual environment
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# Linux / macOS
+source .venv/bin/activate
+
+# 3. Install API dependencies
+pip install -r app/requirements.txt
 ```
 
-### Step 2: Create Virtual Environment (Optional but Recommended)
-```bash
-python -m venv venv
-venv\Scripts\activate
-```
-
-### Step 3: Install Core Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### Step 4: Install API Dependencies
-```bash
-pip install -r Bari_api/requirements.txt
-```
-
-**Key Dependencies:**
-- TensorFlow 2.14+ (deep learning)
-- scikit-learn 1.3+ (Random Forest)
-- FastAPI 0.108+ (REST API)
-- opencv-python (image processing)
-- numpy, pandas (data handling)
+**Key dependencies:** fastapi, uvicorn, scikit-learn, joblib, numpy, Pillow, tensorflow (optional), shap (optional)
 
 ---
 
-## How to Run
+## Running the API
 
-### Option 1: Run the Prediction API
+Run all commands from the **project root** (`Bari/`), not from inside `app/`.
 
-1. **Navigate to API directory:**
-   ```bash
-   cd Bari_api
-   ```
+### Development (auto-reload)
 
-2. **Ensure models are in the directory:**
-   - `fusion_model.h5` (fusion neural network)
-   - `RF_model.pkl` (Random Forest tabular model)
-   - Should be in `Bari_api/` or notebook folder
+```bash
+uvicorn app.main:app --reload --port 8000
+```
 
-3. **Start the FastAPI server:**
-   ```bash
-   python -m uvicorn app:app --reload --port 8000
-   ```
+### Production
 
-4. **Access the API:**
-   - Open browser: `http://localhost:8000/docs` (Swagger UI)
-   - Or use curl/Postman to test endpoints
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+```
 
-### Option 2: Run the Jupyter Notebook
+### Specific host
 
-1. **Install Jupyter:**
-   ```bash
-   pip install jupyter notebook
-   ```
+```bash
+uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
 
-2. **Launch Notebook:**
-   ```bash
-   jupyter notebook Notebook/Bari.ipynb
-   ```
+### As a Python module
 
-3. **Run cells sequentially** to:
-   - Load and explore data
-   - Train/fine-tune models
-   - Evaluate predictions
-   - Generate visualizations
+```bash
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+### Background process (Unix)
+
+```bash
+nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+```
+
+After starting, visit:
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **Health check**: http://localhost:8000/
+
+### Environment Variables (optional model path overrides)
+
+| Variable | Default path | Description |
+|----------|-------------|-------------|
+| `TAB_WH_PATH` | `Notebook/models/tabular_with_hb.pkl` | RF model with HB |
+| `TAB_NH_PATH` | `Notebook/models/tabular_no_hb.pkl` | RF model without HB |
+| `VIS_PATH` | `models/saved_models/visual_model.tflite` | Visual TFLite |
+| `MM_WH_PATH` | `models/saved_models/multimodal_model.tflite` | Fusion with HB TFLite |
+| `MM_NH_PATH` | `models/saved_models/multimodal_no_hb_model.tflite` | Fusion without HB TFLite |
+
+Set via shell, `.env` file (with `python-dotenv`), or inline:
+
+```bash
+# Linux / macOS
+export TAB_WH_PATH=/custom/path/tabular_with_hb.pkl
+
+# Windows
+set TAB_WH_PATH=C:\custom\path\tabular_with_hb.pkl
+```
 
 ---
 
 ## API Endpoints
 
-### POST `/predict/`
-**Predict anemia severity from image and clinical data**
+### GET `/` — Health Check
 
-**Request Parameters:**
-```json
-{
-  "image": "<image_file>",      // Eyelid image (multipart/form-data)
-  "hb": 10.5,                    // Hemoglobin level (float)
-  "age": 35,                     // Patient age (int)
-  "gender": "female"             // Patient gender (string: "male" or "female")
-}
-```
+Returns API version and which models are loaded.
 
 **Response:**
 ```json
 {
-  "prediction": "Mild",
-  "probabilities": [0.05, 0.65, 0.25, 0.05],
-  "gradcam_max_value": 0.87,
-  "nutritional_advice": "Include iron-rich foods like spinach, lentils, lean meat. Avoid tea/coffee with meals."
+  "status": "API running",
+  "version": "2.0.0",
+  "models_loaded": {
+    "tabular_with_hb": true,
+    "tabular_no_hb": true,
+    "visual_tflite": false,
+    "multimodal_with_hb": false,
+    "multimodal_no_hb": false
+  }
 }
 ```
 
 ---
 
-## Prediction Output Components
+### POST `/predict/tabular` — Tabular Prediction
 
-| Component | Description |
-|-----------|-------------|
-| **prediction** | Predicted anemia class (Normal, Mild, Moderate, Severe) |
-| **probabilities** | Model confidence scores for each class [Normal, Mild, Moderate, Severe] |
-| **gradcam_max_value** | Maximum intensity in the Grad-CAM heatmap (0-1) |
-| **nutritional_advice** | Personalized dietary recommendations based on severity |
+Predict anemia severity from clinical features only (no image required).
+
+**Request body (JSON):**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `age` | float | Yes | Age in **months** (0 – 1200) |
+| `gender` | int | Yes | `0` = Male, `1` = Female |
+| `hb_level` | float \| null | No | Hemoglobin in g/dL (0 – 25). Omit or `null` to use no-HB model |
+
+**Model routing:**
+- `hb_level` provided → `tabular_with_hb.pkl` (features: HB_LEVEL, Age, GENDER)
+- `hb_level` absent → `tabular_no_hb.pkl` (features: Age, GENDER)
 
 ---
 
-## Example Usage
+### POST `/predict/image` — Image Prediction
 
-### Using Curl
+Predict anemia from a conjunctiva photograph using the TFLite MobileNetV2 model.
+
+**Request:** `multipart/form-data`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `file` | file | Yes | Conjunctiva image — JPEG or PNG, any resolution (resized to 160×160 internally) |
+
+Requires `visual_model.tflite` to be present.
+
+---
+
+### POST `/predict/multimodal` — Multimodal Fusion Prediction
+
+Best-accuracy endpoint. Combines the conjunctiva image with patient clinical data.
+
+**Request:** `multipart/form-data`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `file` | file | Yes | Conjunctiva image (JPEG / PNG) |
+| `age` | float | Yes | Age in months |
+| `gender` | int | Yes | `0` = Male, `1` = Female |
+| `hb_level` | float | No | Hemoglobin g/dL — determines which fusion model is used |
+
+**Model routing:**
+- `hb_level` present → `multimodal_model.tflite` (tabular branch: 3 features)
+- `hb_level` absent → `multimodal_no_hb_model.tflite` (tabular branch: 2 features)
+
+---
+
+### POST `/explain/tabular` — SHAP Feature Explanation
+
+Returns SHAP feature importance scores for a tabular prediction. Requires `shap` installed.
+
+**Request body (JSON):** Same fields as `/predict/tabular`.
+
+**Response:** `ExplainResponse` — includes `top_features` dict (feature → mean |SHAP|), prediction, confidence, nutrition advice, and a note.
+
+---
+
+## Input / Output Reference
+
+### All prediction endpoints share this response schema
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `prediction` | string | `"Normal"` / `"Mild"` / `"Moderate"` / `"Severe"` |
+| `confidence` | float | Top class probability (0.0 – 1.0) |
+| `class_probabilities` | object | `{Normal: f, Mild: f, Moderate: f, Severe: f}` |
+| `nutrition` | string | Dietary advice paragraph |
+| `recommended_foods` | list[string] | Specific food items |
+| `referral_action` | string | Clinical follow-up recommendation |
+
+### Feature vectors per endpoint variant
+
+| Endpoint | Variant | Feature vector sent to model |
+|----------|---------|------------------------------|
+| `/predict/tabular` | with HB | `[HB_LEVEL, Age(months), GENDER]` — scaled |
+| `/predict/tabular` | no HB | `[Age(months), GENDER]` — scaled |
+| `/predict/image` | — | Image resized to `[1, 160, 160, 3]` float32, `/255` |
+| `/predict/multimodal` | with HB | Image `[1,160,160,3]` + tabular `[1,3]` |
+| `/predict/multimodal` | no HB | Image `[1,160,160,3]` + tabular `[1,2]` |
+| `/explain/tabular` | with HB | Same as tabular with HB |
+| `/explain/tabular` | no HB | Same as tabular no HB |
+
+---
+
+## Example Requests
+
+### Tabular — with HB (curl)
+
 ```bash
-curl -X POST "http://localhost:8000/predict/" \
-  -F "image=@path/to/eyelid_image.jpg" \
-  -F "hb=11.0" \
-  -F "age=40" \
-  -F "gender=female"
+curl -X POST http://localhost:8000/predict/tabular \
+  -H "Content-Type: application/json" \
+  -d '{"age": 312, "gender": 1, "hb_level": 9.5}'
 ```
 
-### Using Python Requests
+### Tabular — without HB (Python)
+
 ```python
 import requests
 
-files = {'image': open('eyelid_image.jpg', 'rb')}
-data = {'hb': 11.0, 'age': 40, 'gender': 'female'}
+resp = requests.post(
+    "http://localhost:8000/predict/tabular",
+    json={"age": 312, "gender": 1}
+)
+print(resp.json())
+```
 
-response = requests.post('http://localhost:8000/predict/', files=files, data=data)
-print(response.json())
+### Image prediction (curl)
+
+```bash
+curl -X POST http://localhost:8000/predict/image \
+  -F "file=@conjunctiva.jpg"
+```
+
+### Multimodal fusion (Python)
+
+```python
+import requests
+
+with open("conjunctiva.jpg", "rb") as img:
+    resp = requests.post(
+        "http://localhost:8000/predict/multimodal",
+        files={"file": img},
+        data={"age": 312, "gender": 1, "hb_level": 9.5}
+    )
+print(resp.json())
+```
+
+### SHAP explanation (curl)
+
+```bash
+curl -X POST http://localhost:8000/explain/tabular \
+  -H "Content-Type: application/json" \
+  -d '{"age": 312, "gender": 1, "hb_level": 9.5}'
+```
+
+**Example response:**
+```json
+{
+  "prediction": "Moderate",
+  "confidence": 0.8241,
+  "class_probabilities": {
+    "Normal": 0.0312,
+    "Mild": 0.1104,
+    "Moderate": 0.8241,
+    "Severe": 0.0343
+  },
+  "nutrition": "Increase iron-rich foods. Consider iron supplementation under medical supervision.",
+  "recommended_foods": ["spinach", "lentils", "lean red meat", "fortified cereals"],
+  "referral_action": "Refer to physician for further evaluation within 1–2 weeks."
+}
+```
+
+### React Native integration
+
+```javascript
+const formData = new FormData();
+formData.append('file', { uri: imageUri, type: 'image/jpeg', name: 'eye.jpg' });
+formData.append('age', '312');
+formData.append('gender', '1');
+formData.append('hb_level', '9.5');
+
+const response = await fetch('http://<server>/predict/multimodal', {
+  method: 'POST',
+  body: formData,
+});
+const result = await response.json();
 ```
 
 ---
 
-## Model Training
+## Error Codes
 
-To retrain models on your data:
-
-1. **Prepare your data:**
-   - Place eyelid images in `data/Images/Anemic/` and `data/Images/Non-anemic/`
-   - Place tabular data in `data/Tabular/anemia.csv` (columns: Age, Gender, Hb, Class)
-
-2. **Open the notebook:**
-   ```bash
-   jupyter notebook Notebook/Bari.ipynb
-   ```
-
-3. **Execute training cells** to:
-   - Load and preprocess images
-   - Fine-tune MobileNetV2
-   - Train Random Forest on tabular data
-   - Train fusion model
-   - Save models
+| Status | Meaning | Example cause |
+|--------|---------|---------------|
+| 400 | Bad Request | Preprocessing failed (e.g. non-numeric age) |
+| 422 | Unprocessable Entity | Missing required field, unsupported image type |
+| 501 | Not Implemented | `shap` not installed, `/explain/tabular` called |
+| 503 | Service Unavailable | Required model file not found at startup |
+| 500 | Internal Server Error | Unexpected inference failure |
 
 ---
+
+## Generating Model Files from the Notebook
+
+Run `Notebook/Bari.ipynb` sequentially in Google Colab or locally (Python 3.9–3.11 with TensorFlow).
+
+| Notebook section | Output file | Used by endpoint |
+|-----------------|-------------|-----------------|
+| Part 5 — Random Forest (with HB) | `Notebook/models/tabular_with_hb.pkl` | `/predict/tabular`, `/predict/multimodal`, `/explain/tabular` |
+| Part 5 — Random Forest (no HB) | `Notebook/models/tabular_no_hb.pkl` | Same, fallback variant |
+| Part 7 — Visual TFLite export | `models/saved_models/visual_model.tflite` | `/predict/image` |
+| Part 8 — Fusion TFLite export | `models/saved_models/multimodal_model.tflite` | `/predict/multimodal` (with HB) |
+| Part 8 — Fusion TFLite export | `models/saved_models/multimodal_no_hb_model.tflite` | `/predict/multimodal` (no HB) |
+
+---
+
 ## Dataset Citation
 
-This project utilizes eyelid imagery and clinical tabular data for anemia detection research. The dataset includes:
-
-**Dataset Components:**
-- **Visual Component**: Eyelid images from anemic and non-anemic individuals (labeled in `data/Images/`)
-- **Tabular Component**: Clinical measurements including age, gender, and hemoglobin (Hb) levels (in `data/Tabular/anemia.csv`)
-
-**Attribution:**
-If you use this project or dataset in your research, please cite:
-
-Asare, Justice Williams; APPIAHENE, PETER; DONKOH, EMMANUEL (2023), “CP-AnemiC (A Conjunctival Pallor) Dataset from Ghana”, Mendeley Data, V1, doi: 10.17632/m53vz6b7fx.1
-
-
-
-
-**Data Rights:**
-- Ensure compliance with institutional review board (IRB) requirements when using medical imagery
-- Personal health information (PHI) should be appropriately de-identified
-- Respect patient privacy and data protection regulations (e.g., HIPAA, GDPR)
+Asare, Justice Williams; APPIAHENE, PETER; DONKOH, EMMANUEL (2023),
+"CP-AnemiC (A Conjunctival Pallor) Dataset from Ghana",
+Mendeley Data, V1, doi: [10.17632/m53vz6b7fx.1](https://doi.org/10.17632/m53vz6b7fx.1)
 
 ---
+
 ## Clinical Disclaimer
 
 **This system is for educational and research purposes only.**
 
-- **NOT a medical diagnosis tool** – Use only as a preliminary screening aid
-- **Requires professional validation** – Always consult qualified healthcare professionals
-- **No liability** – Developers assume no responsibility for medical decisions based on this system
-- **Supplementary only** – Must be used alongside, never instead of, proper medical examination
+- NOT a diagnostic tool — use only as a preliminary screening aid
+- Always consult qualified healthcare professionals for diagnosis and treatment
+- Developers assume no responsibility for medical decisions based on this system
+- Must be used alongside, never instead of, proper clinical examination
 
 ---
 
 ## License
 
-This project is provided as-is for educational and research purposes.
+Provided as-is for educational and research purposes.
 
 ---
 
@@ -351,114 +478,4 @@ This project is provided as-is for educational and research purposes.
 
 - **Project**: Bari Anemia Detection System
 - **Institution**: Capstone Project
-- **Date**: 2026
-
----
-
-## Support
-
-For issues, questions, or contributions, please refer to the project documentation or contact the development team.
-│
-├─ results/
-│   ├─ confusion_matrix.png
-│   ├─ accuracy_table.csv
-│   └─ training_curves.png
-│
-├─ README.md
-└─ LICENSE
-
-
-⸻
-
-Dataset Requirements
-	•	Image Data: Inner eyelid images, organized by class (Anemic / Non-Anemic). Recommended resolution: 224x224.
-	•	Tabular Data: Age, Gender, Hemoglobin levels.
-	•	Dataset Link: []
-
-⸻
-
-Model Components
-
-Component	Description
-MobileNetV2	Pretrained CNN for extracting features from eyelid images
-Random Forest	Generates tabular feature embeddings (age, gender, Hb)
-Fusion Network	Fully-connected network combining image + tabular embeddings
-Output Layer	Softmax classification for anemia severity
-
-
-⸻
-
-Training & Validation
-	•	Visual Model: Fine-tuned MobileNetV2 on eyelid images
-	•	Fusion Model: Tabular + image embeddings
-	•	Loss Function: Sparse categorical cross-entropy
-	•	Metrics: Accuracy, Confusion Matrix, Classification Report
-	•	Early Stopping: Monitor validation loss
-
-Example Table for Results:
-
-Model Component	Dataset	Epochs	Train Accuracy	Val Accuracy	Notes
-MobileNetV2 (Visual)	Images	30	0.75	0.73	Fine-tuned, first 100 layers frozen
-Random Forest (Tabular)	Tabular	-	-	0.68	Predicts class probabilities
-Fusion Network	Images + Tabular	25	0.78	0.75	Combines embeddings
-
-
-⸻
-
-Inference
-
-Input:
-	•	Eyelid image
-	•	Age, Gender, Hemoglobin
-
-Output:
-	•	Predicted anemia class
-	•	Grad-CAM heatmap (visual attention)
-	•	Symptoms associated with predicted class
-	•	Nutritional plan (WHO guidelines)
-	•	Recommended physical activity
-
-Example Usage:
-
-from main_api import predict_anemia
-
-image_path = "data/images/sample.jpg"
-tabular_input = {"age": 25, "gender": "Female", "hb": 9.5}
-
-result = predict_anemia(image_path, tabular_input)
-
-print(result)
-# Output: 
-# {'class': 'Moderate Anemia', 'symptoms': [...], 'nutrition': [...], 'exercise': [...], 'heatmap': <image>}
-
-
-⸻
-
-API
-	•	Runs via FastAPI
-	•	Accepts POST requests with image + tabular data
-	•	Returns JSON with predictions, recommendations, and Grad-CAM visualization
-
-requirements.txt sample:
-
-tensorflow==2.13.0
-scikit-learn==1.3.0
-fastapi==0.100.0
-uvicorn==0.23.0
-opencv-python==4.8.1
-numpy==1.26.0
-matplotlib==3.8.0
-seaborn==0.12.3
-
-
-⸻
-
-[Demo Link](https://www.loom.com/share/b0a15495008b4fbc948d9f9edaa5f5f5)
-
-⸻
-
-Next Steps / Recommendations
-	1.	Expand dataset with more images for better generalization.
-	2.	Add real-time camera inference in the API.
-	3.	Integrate automated nutritional plan suggestions per WHO standards.
-	4.	Deploy a full accessible mobile platform
+- **Year**: 2026

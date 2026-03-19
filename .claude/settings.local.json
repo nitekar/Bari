@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 add_notebook_cells.py)"
+    ]
+  }
+}

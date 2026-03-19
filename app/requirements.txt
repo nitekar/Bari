@@ -1,0 +1,20 @@
+# ── API framework ─────────────────────────────────────────────────────────────
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+pydantic>=2.0.0
+
+# ── ML / inference ────────────────────────────────────────────────────────────
+tensorflow>=2.10.0          # TFLite included
+scikit-learn>=1.0.0
+numpy>=1.21.0
+joblib>=1.1.0
+
+# ── Image processing ──────────────────────────────────────────────────────────
+Pillow>=9.0.0
+
+# ── Explainability (optional, for /explain/tabular) ───────────────────────────
+shap>=0.41.0
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+python-dotenv>=1.0.0

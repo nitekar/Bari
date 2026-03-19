@@ -1,0 +1,113 @@
+{
+  "Non-Anemic": {
+    "hb_range": ">=12 g/dL (Female) or >=13 g/dL (Male)",
+    "urgency_level": "Normal",
+    "diet_recommendation": "Maintain a balanced diet rich in iron sources to sustain healthy haemoglobin levels. Regular monitoring recommended.",
+    "food_list": [
+      "Lean red meat (beef, lamb)",
+      "Poultry (chicken, turkey)",
+      "Fish and seafood",
+      "Eggs",
+      "Dark leafy greens (spinach, kale)",
+      "Legumes (lentils, chickpeas, kidney beans)",
+      "Fortified cereals and bread",
+      "Nuts and seeds (pumpkin seeds, sesame)",
+      "Tofu and tempeh",
+      "Citrus fruits (orange, lemon) for vitamin C"
+    ],
+    "supplements": [],
+    "foods_to_avoid": [
+      "Excessive tea or coffee with meals (inhibits iron absorption)",
+      "High-calcium foods immediately before iron-rich meals"
+    ],
+    "referral_action": "No referral needed. Schedule routine check-up annually.",
+    "followup_weeks": 52
+  },
+  "Mild": {
+    "hb_range": "10-11.9 g/dL (Female) or 10-12.9 g/dL (Male)",
+    "urgency_level": "Low",
+    "diet_recommendation": "Increase daily intake of iron-rich foods. Pair iron sources with vitamin C to enhance absorption. Reduce consumption of iron inhibitors at meal times.",
+    "food_list": [
+      "Spinach (cooked increases bioavailability)",
+      "Lentils and dal",
+      "Kidney beans and black beans",
+      "Chickpeas (hummus)",
+      "Fortified breakfast cereals",
+      "Pumpkin seeds",
+      "Dried apricots and raisins",
+      "Lean beef and lamb",
+      "Liver (in moderation)",
+      "Broccoli and Brussels sprouts",
+      "Bell peppers (vitamin C boost)",
+      "Strawberries, kiwi, guava (vitamin C)"
+    ],
+    "supplements": [
+      "Consider low-dose iron supplement (consult physician)"
+    ],
+    "foods_to_avoid": [
+      "Tea and coffee within 1 hour of meals",
+      "Calcium-rich dairy immediately before/after iron-rich meals",
+      "Foods high in phytates (unsoaked whole grains) without preparation"
+    ],
+    "referral_action": "Schedule appointment with primary care physician within 4 weeks for blood work confirmation.",
+    "followup_weeks": 8
+  },
+  "Moderate": {
+    "hb_range": "7-9.9 g/dL",
+    "urgency_level": "Medium",
+    "diet_recommendation": "Implement a structured iron-rich dietary plan. Consume vitamin C with every iron-rich meal to maximise absorption. Medical consultation is strongly recommended to rule out underlying causes and evaluate iron supplementation.",
+    "food_list": [
+      "Cooked lentils (1 cup daily)",
+      "Dark leafy greens (spinach, Swiss chard) daily",
+      "Red meat 3-4 times per week",
+      "Liver or organ meat once per week",
+      "Oysters or clams (high haem iron)",
+      "Fortified cereals every morning",
+      "Pumpkin and sunflower seeds",
+      "Tofu (especially iron-fortified)",
+      "Dried fruits (apricots, prunes, figs)",
+      "Orange juice or citrus with every iron-rich meal",
+      "Tomatoes, bell peppers, broccoli",
+      "Blackstrap molasses (natural iron source)"
+    ],
+    "supplements": [
+      "Oral iron supplementation (ferrous sulphate 200mg) - as prescribed",
+      "Vitamin C 500mg with iron supplement",
+      "Folic acid 400mcg daily if deficiency suspected"
+    ],
+    "foods_to_avoid": [
+      "Tea, coffee, and wine with meals",
+      "High-fibre bran immediately with iron-rich food",
+      "Antacids around meal times",
+      "Excessive calcium supplements"
+    ],
+    "referral_action": "Medical consultation required within 2 weeks. Request CBC, serum ferritin, serum iron, and TIBC. Investigate underlying cause (nutritional deficiency vs. bleeding vs. chronic disease).",
+    "followup_weeks": 4
+  },
+  "Severe": {
+    "hb_range": "<7 g/dL",
+    "urgency_level": "Critical",
+    "diet_recommendation": "URGENT: Immediate medical evaluation is required. Dietary intervention alone is insufficient for severe anaemia. Nutritional changes should only be made under direct medical supervision alongside prescribed treatment.",
+    "food_list": [
+      "Iron-rich foods as tolerated (not a substitute for medical treatment)",
+      "Liver and organ meats (high haem iron)",
+      "Red meat",
+      "Iron-fortified foods",
+      "Vitamin C with all meals",
+      "Leafy green vegetables",
+      "Legumes (lentils, beans)"
+    ],
+    "supplements": [
+      "IV iron infusion may be required (hospital-administered)",
+      "Oral iron therapy under medical supervision",
+      "Blood transfusion may be necessary (medical decision)",
+      "Erythropoietin therapy if renal cause suspected"
+    ],
+    "foods_to_avoid": [
+      "Iron absorption inhibitors until HB levels stabilise",
+      "Foods that exacerbate underlying conditions"
+    ],
+    "referral_action": "IMMEDIATE referral to emergency care or haematology. Do not delay. Risk of cardiac complications at HB < 7 g/dL. Requires urgent full blood count, reticulocyte count, peripheral blood smear, and clinical assessment.",
+    "followup_weeks": 1
+  }
+}

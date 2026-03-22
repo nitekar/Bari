@@ -261,7 +261,7 @@ async def predict_image_endpoint(
     **Image prediction**
 
     Upload a conjunctiva eye image. The model returns severity class
-    probabilities using a quantized MobileNetV2 (TFLite).
+    probabilities using a quantized ResNet50 + CBAM (TFLite).
     """
     if _registry["vis_interp"] is None:
         raise HTTPException(503, "Visual TFLite model is not loaded.")

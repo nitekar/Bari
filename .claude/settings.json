@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp \"G:/My Drive/Capstone/Bari/Notebook/models/tabular_with_hb.pkl\" \"c:/Users/USER/Capstone/Bari/Notebook/models/\")",
+      "Bash(cp \"G:/My Drive/Capstone/Bari/Notebook/models/tabular_no_hb.pkl\" \"c:/Users/USER/Capstone/Bari/Notebook/models/\")",
+      "Bash(cp \"G:/My Drive/Capstone/Bari/models/saved_models/visual_model.tflite\" \"c:/Users/USER/Capstone/Bari/models/saved_models/\")",
+      "Bash(cp \"G:/My Drive/Capstone/Bari/models/saved_models/multimodal_model.tflite\" \"c:/Users/USER/Capstone/Bari/models/saved_models/\")",
+      "Bash(cp \"G:/My Drive/Capstone/Bari/models/saved_models/multimodal_no_hb_model.tflite\" \"c:/Users/USER/Capstone/Bari/models/saved_models/\")",
+      "Bash(ls -lh \"c:/Users/USER/Capstone/Bari/Notebook/models/\"*.pkl)",
+      "Bash(ls -lh \"c:/Users/USER/Capstone/Bari/models/saved_models/\"*.tflite)"
+    ]
+  }
+}

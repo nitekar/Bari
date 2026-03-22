@@ -12,8 +12,9 @@ from PIL import Image, UnidentifiedImageError
 
 logger = logging.getLogger("anemia-api.image")
 
-IMG_SIZE = 160                          # training resolution
-ACCEPTED_MIME = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
+IMG_SIZE       = 224    # MobileNetV3Small native input size
+ROI_CROP_RATIO = 0.70   # central crop fraction — matches training pipeline
+ACCEPTED_MIME  = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
 
 
 def load_pil_image(raw_bytes: bytes) -> Image.Image:
@@ -38,25 +39,27 @@ def load_pil_image(raw_bytes: bytes) -> Image.Image:
 
 def preprocess_image(image: Image.Image) -> np.ndarray:
     """
-    Resize → centre-crop → normalise to [0, 1].
+    Central-crop (70 %) → resize 224×224 → MobileNetV3 preprocess_input.
+
+    Matches the training pipeline exactly:
+        tf.image.central_crop(0.70) → tf.image.resize(224) →
+        mobilenet_v3.preprocess_input  →  pixels in [-1, 1]
 
     Returns
     -------
-    np.ndarray  shape (1, 160, 160, 3)  dtype float32
+    np.ndarray  shape (1, 224, 224, 3)  dtype float32
     """
-    # Slight oversize for centre crop (matches training pipeline)
-    load_size = IMG_SIZE + 20
-    img = image.resize((load_size, load_size), Image.LANCZOS)
+    w, h = image.size
+    crop_w = int(w * ROI_CROP_RATIO)
+    crop_h = int(h * ROI_CROP_RATIO)
+    left   = (w - crop_w) // 2
+    top    = (h - crop_h) // 2
+    image  = image.crop((left, top, left + crop_w, top + crop_h))
 
-    # Centre-crop to IMG_SIZE
-    left   = (load_size - IMG_SIZE) // 2
-    top    = (load_size - IMG_SIZE) // 2
-    right  = left + IMG_SIZE
-    bottom = top  + IMG_SIZE
-    img    = img.crop((left, top, right, bottom))
-
-    arr = np.array(img, dtype="float32") / 255.0
-    return np.expand_dims(arr, axis=0)          # (1, 160, 160, 3)
+    image = image.resize((IMG_SIZE, IMG_SIZE), Image.LANCZOS)
+    arr   = np.array(image, dtype="float32")    # [0, 255] RGB
+    arr   = arr / 127.5 - 1.0                   # MobileNetV3: scale to [-1, 1]
+    return np.expand_dims(arr, axis=0)          # (1, 224, 224, 3)
 
 
 def validate_image_content_type(content_type: str) -> None:

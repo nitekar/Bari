@@ -42,7 +42,8 @@ def preprocess_tabular(
 
 def preprocess_image_bytes(raw_bytes: bytes) -> np.ndarray:
     """
-    Decode bytes → PIL.Image → (1, 160, 160, 3) float32 array.
+    Decode bytes → PIL.Image → central crop (70 %) → (1, 224, 224, 3) float32
+    array normalised to [-1, 1] (MobileNetV3Small preprocess_input).
     """
     from app.utils.image_utils import load_pil_image
     pil = load_pil_image(raw_bytes)

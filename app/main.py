@@ -147,6 +147,7 @@ def _make_response(
 # ─────────────────────────────────────────────────────────────────────────────
 # ENDPOINT 1 — Health check
 # ─────────────────────────────────────────────────────────────────────────────
+@app.get("/", response_model=HealthResponse, tags=["Health"])
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
 async def health_check() -> HealthResponse:
     """Returns API status and which models are loaded."""

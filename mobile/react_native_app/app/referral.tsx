@@ -21,8 +21,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../src/shared/theme';
 import { Card, Button } from '../src/shared/components';
-import { useStore } from '../src/app/store/useStore';
-import { useAnalyticsStore } from '../src/app/store/analyticsStore';
+import { useStore } from '../src/store/useStore';
+import { useAnalyticsStore } from '../src/store/analyticsStore';
 import { generateAndShareReferralPDF, type ReferralData } from '../src/services/pdfService';
 
 // ── Rwanda Clinic Data ──

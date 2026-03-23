@@ -98,7 +98,11 @@ async def lifespan(app: FastAPI):
 
     # ── TFLite interpreters ───────────────────────────────────────────────────
     try:
-        import tensorflow as tf
+        try:
+            from tflite_runtime.interpreter import Interpreter as TFLiteInterpreter
+        except ImportError:
+            import tensorflow as tf
+            TFLiteInterpreter = tf.lite.Interpreter
 
         for reg_key, path_key in [
             ("vis_interp",   "vis"),
@@ -107,7 +111,7 @@ async def lifespan(app: FastAPI):
         ]:
             path = MODEL_PATHS[path_key]
             if os.path.exists(path):
-                interp = tf.lite.Interpreter(model_path=path)
+                interp = TFLiteInterpreter(model_path=path)
                 interp.allocate_tensors()
                 _registry[reg_key] = interp
                 logger.info(f"  [OK] {path_key} → {path}")

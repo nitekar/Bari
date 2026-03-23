@@ -10,8 +10,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../src/shared/theme';
-import { Card } from '../src/shared/components';
+import { colors, typography, spacing, borderRadius } from '../../src/shared/theme';
+import { Card } from '../../src/shared/components';
 
 // ── Education content data ──
 interface EducationSection {

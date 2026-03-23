@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../src/shared/theme';
+import { colors, typography, spacing, borderRadius } from '../../src/shared/theme';
 import {
   Button,
   InputField,
@@ -21,15 +21,15 @@ import {
   GenderToggle,
   LoadingOverlay,
   ErrorMessage,
-} from '../src/shared/components';
-import { useStore } from '../src/app/store/useStore';
+} from '../../src/shared/components';
+import { useStore } from '../../src/store/useStore';
 import {
   predictTabular,
   predictImage,
   predictMultimodal,
-} from '../src/services/screeningService';
-import type { ScreeningResult } from '../src/services/screeningService';
-import { useAnalyticsStore } from '../src/app/store/analyticsStore';
+} from '../../src/services/screeningService';
+import type { ScreeningResult } from '../../src/services/screeningService';
+import { useAnalyticsStore } from '../../src/store/analyticsStore';
 
 export default function ScreeningScreen() {
   const router = useRouter();
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: 120,
   },
   modeCard: {
     backgroundColor: colors.primary + '15',

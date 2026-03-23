@@ -5,9 +5,10 @@
  * user auth state, and offline support.
  */
 import { create } from 'zustand';
-import type { PredictionResponse } from '../../services/types';
-import type { QueuedRequest } from '../../services/offlineQueue';
-import { saveScreeningResult, getScreeningHistory } from '../../services/supabaseDb';
+import type { PredictionResponse } from '../services/types';
+import type { QueuedRequest } from '../services/offlineQueue';
+import { saveScreeningResult, getScreeningHistory } from '../services/supabaseDb';
+import type { Language } from '../i18n/translations';
 
 // ── Screening History Record ──
 export interface ScreeningRecord {
@@ -22,6 +23,12 @@ export interface ScreeningRecord {
 }
 
 interface AppState {
+  // ── App settings ──
+  language: Language;
+  hasSeenOnboarding: boolean;
+  setLanguage: (lang: Language) => void;
+  setHasSeenOnboarding: (seen: boolean) => void;
+
   // ── Auth ──
   userId: string | null;
 
@@ -56,6 +63,8 @@ interface AppState {
 }
 
 const initialState = {
+  language: 'en' as Language,
+  hasSeenOnboarding: false,
   userId: null as string | null,
   result: null,
   imageUri: null,
@@ -68,6 +77,9 @@ const initialState = {
 
 export const useStore = create<AppState>((set, get) => ({
   ...initialState,
+
+  setLanguage: (lang) => set({ language: lang }),
+  setHasSeenOnboarding: (seen) => set({ hasSeenOnboarding: seen }),
 
   setUserId: (id) => set({ userId: id }),
 

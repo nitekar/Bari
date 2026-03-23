@@ -12,7 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../src/shared/theme';
-import { severityColorMap } from '../src/shared/theme/colors';
+import { severityColorMap, nextScreeningDays } from '../src/shared/theme/colors';
 import { Card, ResultBadge, Button } from '../src/shared/components';
 import { useStore } from '../src/store/useStore';
 import { useAnalyticsStore } from '../src/store/analyticsStore';
@@ -197,6 +197,40 @@ function ResultScreen() {
           </TouchableOpacity>
         )}
       </Card>
+
+      {/* Next Screening Reminder */}
+      {(() => {
+        const days = nextScreeningDays[result.prediction] ?? 90;
+        const nextDate = new Date();
+        nextDate.setDate(nextDate.getDate() + days);
+        const dateStr = nextDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+        const isUrgent = result.prediction === 'Severe';
+        return (
+          <Card style={{ backgroundColor: isUrgent ? colors.severitySevereBg : colors.accentLight, borderWidth: 1, borderColor: isUrgent ? colors.severitySevere : colors.accent }}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="calendar-outline" size={22} color={isUrgent ? colors.severitySevere : colors.accentDark} />
+              <Text style={[styles.cardTitle, { color: isUrgent ? colors.severitySevere : colors.accentDark }]}>
+                Next Screening Reminder
+              </Text>
+            </View>
+            <Text style={styles.adviceText}>
+              {result.prediction === 'Non-Anemic'
+                ? 'Great result! Schedule a routine follow-up in 6 months to monitor iron levels.'
+                : result.prediction === 'Mild'
+                ? 'Mild anemia detected. Re-screen in 3 months to track improvement.'
+                : result.prediction === 'Moderate'
+                ? 'Moderate anemia detected. Follow up in 4 weeks after starting treatment.'
+                : 'Severe anemia — seek immediate care and re-screen in 2 weeks after treatment begins.'}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, backgroundColor: colors.surface, padding: 10, borderRadius: 8 }}>
+              <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
+              <Text style={{ marginLeft: 6, color: colors.textSecondary, fontWeight: '600' }}>
+                Recommended date: {dateStr}
+              </Text>
+            </View>
+          </Card>
+        );
+      })()}
 
       {/* Referral Action */}
       <Card

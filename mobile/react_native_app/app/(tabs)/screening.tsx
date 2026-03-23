@@ -9,7 +9,6 @@ import {
   StyleSheet,
   Image,
   Alert,
-  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,18 +22,18 @@ import {
   ErrorMessage,
 } from '../../src/shared/components';
 import { useStore } from '../../src/store/useStore';
-import {
-  predictTabular,
-  predictImage,
-  predictMultimodal,
-} from '../../src/services/screeningService';
+import { useTranslation } from '../../src/i18n';
+import { predictMultimodal } from '../../src/services/screeningService';
 import type { ScreeningResult } from '../../src/services/screeningService';
 import { useAnalyticsStore } from '../../src/store/analyticsStore';
 
 export default function ScreeningScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   // ── Local form state ──
+  const [patientName, setPatientName] = useState('');
+  const [patientLocation, setPatientLocation] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState(0);
   const [hbLevel, setHbLevel] = useState('');
@@ -56,82 +55,49 @@ export default function ScreeningScreen() {
   const hasAge = !isNaN(ageNum) && ageNum >= 0;
   const hasImage = !!imageUri;
 
-  // ── Determine which prediction mode to use ──
-  const getScreeningMode = (): 'tabular' | 'image' | 'multimodal' => {
-    if (hasImage && hasAge) return 'multimodal';
-    if (hasImage) return 'image';
-    return 'tabular';
-  };
-
-  // ── Submit handler ──
+  // ── Submit handler — always multimodal ──
   const handleSubmit = useCallback(async () => {
-    const mode = getScreeningMode();
-
-    if (mode === 'tabular' && !hasAge) {
-      if (Platform.OS === 'web') {
-        window.alert('Missing Data: Please enter the patient age.');
-      } else {
-        Alert.alert('Missing Data', 'Please enter the patient age.');
-      }
+    if (!hasAge) {
+      Alert.alert('Missing Data', 'Please enter the patient age.');
+      return;
+    }
+    if (!hasImage) {
+      Alert.alert('Missing Data', 'Please add a conjunctiva image to proceed.');
       return;
     }
 
     setLoading(true);
     setError(null);
-    trackEvent('screening_started', { mode });
+    trackEvent('screening_started', { mode: 'multimodal' });
 
     try {
-      let result: ScreeningResult;
-
-      switch (mode) {
-        case 'tabular':
-          result = await predictTabular({
-            age: ageNum,
-            gender,
-            hb_level: hbNum,
-          });
-          break;
-
-        case 'image':
-          result = await predictImage(imageUri!, userId);
-          break;
-
-        case 'multimodal':
-          result = await predictMultimodal(
-            {
-              imageUri: imageUri!,
-              age: ageNum,
-              gender,
-              hb_level: hbNum,
-            },
-            userId,
-          );
-          break;
-      }
+      const result = await predictMultimodal(
+        { imageUri: imageUri!, age: ageNum, gender, hb_level: hbNum },
+        userId,
+      );
 
       setResult(result);
       setLoading(false);
 
-      // Track + persist
       trackEvent('screening_completed', { severity: result.prediction, confidence: result.confidence });
       addToHistory({
         id: Date.now().toString(),
         date: new Date().toISOString(),
         prediction: result.prediction,
         confidence: result.confidence,
-        mode,
+        mode: 'multimodal',
         age: ageNum,
         gender,
         imageUrl: result.imageStoragePath,
+        patientName: patientName.trim() || undefined,
+        patientLocation: patientLocation.trim() || undefined,
       });
 
       router.push('/result');
     } catch (err: any) {
       setError(err.message || 'Screening failed. Please try again.');
     }
-  }, [age, gender, hbLevel, imageUri]);
-
-  const screeningMode = getScreeningMode();
+  }, [age, gender, hbLevel, imageUri, patientName, patientLocation]);
 
   return (
     <View style={styles.wrapper}>
@@ -140,51 +106,38 @@ export default function ScreeningScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Mode Indicator */}
-        <Card style={styles.modeCard}>
-          <View style={styles.modeRow}>
-            <Ionicons
-              name={
-                screeningMode === 'multimodal'
-                  ? 'layers-outline'
-                  : screeningMode === 'image'
-                  ? 'camera-outline'
-                  : 'document-text-outline'
-              }
-              size={20}
-              color={colors.primary}
-            />
-            <Text style={styles.modeText}>
-              Mode:{' '}
-              <Text style={styles.modeBold}>
-                {screeningMode === 'multimodal'
-                  ? 'Multimodal (Image + Data)'
-                  : screeningMode === 'image'
-                  ? 'Image Only'
-                  : 'Tabular Data Only'}
-              </Text>
-            </Text>
-          </View>
-        </Card>
-
         {/* Patient Information Section */}
-        <Text style={styles.sectionTitle}>Patient Information</Text>
+        <Text style={styles.sectionTitle}>{t.screening.patientInfo}</Text>
 
         <InputField
-          label="Age (months)"
+          label={t.screening.patientName}
+          value={patientName}
+          onChangeText={setPatientName}
+          placeholder="e.g. Amara Uwase"
+        />
+
+        <InputField
+          label={t.screening.location}
+          value={patientLocation}
+          onChangeText={setPatientLocation}
+          placeholder="e.g. Kigali, Rwanda"
+        />
+
+        <InputField
+          label={t.screening.patientAge}
           value={age}
           onChangeText={setAge}
-          placeholder="e.g. 24"
+          placeholder={t.screening.agePlaceholder}
           keyboardType="numeric"
         />
 
         <GenderToggle value={gender} onChange={setGender} />
 
         <InputField
-          label="Hemoglobin Level (g/dL) — Optional"
+          label={`${t.screening.hemoglobin} — ${t.screening.optional}`}
           value={hbLevel}
           onChangeText={setHbLevel}
-          placeholder="e.g. 11.5"
+          placeholder={t.screening.hbPlaceholder}
           keyboardType="decimal-pad"
         />
 

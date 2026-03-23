@@ -6,17 +6,23 @@
 -- ── Screenings table ─────────────────────────────────────────────────────────
 
 create table if not exists screenings (
-  id          uuid default gen_random_uuid() primary key,
-  user_id     uuid references auth.users(id) on delete cascade not null,
-  prediction  text not null,
-  confidence  real not null,
-  mode        text not null check (mode in ('tabular', 'image', 'multimodal')),
-  age         integer,
-  gender      integer,
-  hb_level    real,
-  image_url   text,
-  created_at  timestamptz default now()
+  id               uuid default gen_random_uuid() primary key,
+  user_id          uuid references auth.users(id) on delete cascade not null,
+  prediction       text not null,
+  confidence       real not null,
+  mode             text not null check (mode in ('tabular', 'image', 'multimodal')),
+  age              integer,
+  gender           integer,
+  hb_level         real,
+  image_url        text,
+  patient_name     text,
+  patient_location text,
+  created_at       timestamptz default now()
 );
+
+-- Add columns if table already exists (safe to run on existing DB)
+alter table screenings add column if not exists patient_name     text;
+alter table screenings add column if not exists patient_location text;
 
 -- ── Analytics events table ───────────────────────────────────────────────────
 

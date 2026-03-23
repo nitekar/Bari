@@ -120,27 +120,49 @@ export default function HistoryScreen() {
 
   // ── History list item ─────────────────────────────────────────────────────
   const renderItem = ({ item }: { item: ScreeningRecord }) => {
-    const bg = severityBgMap[item.prediction] ?? colors.surface;
+    const severityColor = severityColorMap[item.prediction] ?? colors.primary;
     const date = new Date(item.date);
     const isToday = date.toDateString() === new Date().toDateString();
-    const dateStr = isToday ? t.history.today : date.toLocaleDateString();
+    const dateStr = isToday ? t.history.today : date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     return (
-      <View style={[styles.historyItem, { backgroundColor: bg }]}>
-        <View style={styles.historyLeft}>
-          <ResultBadge prediction={item.prediction} />
-          <View style={styles.historyMeta}>
-            <Text style={styles.historyMode}>{item.mode}</Text>
-            {item.age !== undefined && (
-              <Text style={styles.historyDetail}>{item.age} mo</Text>
-            )}
+      <View style={styles.historyItem}>
+        {/* Severity accent bar */}
+        <View style={[styles.severityBar, { backgroundColor: severityColor }]} />
+        <View style={styles.historyBody}>
+          {/* Top row: patient name + badge */}
+          <View style={styles.historyTopRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.patientName} numberOfLines={1}>
+                {item.patientName || 'Unknown Patient'}
+              </Text>
+              {item.patientLocation ? (
+                <View style={styles.locationRow}>
+                  <Ionicons name="location-outline" size={12} color={colors.textLight} />
+                  <Text style={styles.locationText}>{item.patientLocation}</Text>
+                </View>
+              ) : null}
+            </View>
+            <View style={[styles.severityPill, { backgroundColor: severityColor + '20', borderColor: severityColor }]}>
+              <Text style={[styles.severityPillText, { color: severityColor }]}>{item.prediction}</Text>
+            </View>
           </View>
-        </View>
-        <View style={styles.historyRight}>
-          <Text style={styles.historyConf}>{Math.round(item.confidence * 100)}%</Text>
-          <Text style={styles.historyDate}>{dateStr}</Text>
-          <Text style={styles.historyTime}>{timeStr}</Text>
+
+          {/* Bottom row: date + mode + confidence */}
+          <View style={styles.historyBottomRow}>
+            <View style={styles.metaChip}>
+              <Ionicons name="calendar-outline" size={11} color={colors.textSecondary} />
+              <Text style={styles.metaText}>{dateStr} · {timeStr}</Text>
+            </View>
+            <View style={styles.metaChip}>
+              <Ionicons name="layers-outline" size={11} color={colors.textSecondary} />
+              <Text style={styles.metaText}>{item.mode}</Text>
+            </View>
+            <View style={[styles.confBadge, { backgroundColor: severityColor }]}>
+              <Text style={styles.confText}>{Math.round(item.confidence * 100)}%</Text>
+            </View>
+          </View>
         </View>
       </View>
     );
@@ -238,20 +260,31 @@ const styles = StyleSheet.create({
   // ── History item ──
   historyItem: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
     ...shadows.sm,
   },
-  historyLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
-  historyMeta: { flex: 1 },
-  historyMode: { fontSize: 12, fontWeight: '600', color: colors.text, textTransform: 'capitalize' },
-  historyDetail: { fontSize: 11, color: colors.textSecondary },
-  historyRight: { alignItems: 'flex-end' },
-  historyConf: { fontSize: 14, fontWeight: '800', color: colors.text },
-  historyDate: { fontSize: 11, color: colors.textSecondary },
-  historyTime: { fontSize: 10, color: colors.textLight },
+  severityBar: { width: 5 },
+  historyBody: { flex: 1, padding: spacing.md },
+  historyTopRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
+  patientName: { fontSize: 15, fontWeight: '700', color: colors.text },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 },
+  locationText: { fontSize: 11, color: colors.textLight },
+  severityPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginLeft: 8,
+    alignSelf: 'flex-start',
+  },
+  severityPillText: { fontSize: 11, fontWeight: '700' },
+  historyBottomRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  metaChip: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  metaText: { fontSize: 11, color: colors.textSecondary, textTransform: 'capitalize' },
+  confBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, marginLeft: 'auto' as any },
+  confText: { fontSize: 11, fontWeight: '700', color: colors.white },
   // ── Empty ──
   empty: {
     flex: 1,

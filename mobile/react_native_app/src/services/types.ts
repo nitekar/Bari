@@ -46,6 +46,8 @@ export interface ScreeningRow {
   gender?: number;
   hb_level?: number | null;
   image_url?: string | null;
+  patient_name?: string | null;
+  patient_location?: string | null;
   created_at: string;
 }
 

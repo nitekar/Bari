@@ -5,10 +5,19 @@
  * user auth state, and offline support.
  */
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import * as SecureStore from 'expo-secure-store';
 import type { PredictionResponse } from '../services/types';
 import type { QueuedRequest } from '../services/offlineQueue';
 import { saveScreeningResult, getScreeningHistory } from '../services/supabaseDb';
 import type { Language } from '../i18n/translations';
+
+// ── SecureStore adapter for zustand/persist ──────────────────────────────────
+const secureStorage = createJSONStorage(() => ({
+  getItem: (key: string) => SecureStore.getItemAsync(key),
+  setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
+  removeItem: (key: string) => SecureStore.deleteItemAsync(key),
+}));
 
 // ── Screening History Record ──
 export interface ScreeningRecord {
@@ -20,6 +29,8 @@ export interface ScreeningRecord {
   age?: number;
   gender?: number;
   imageUrl?: string | null;
+  patientName?: string;
+  patientLocation?: string;
 }
 
 interface AppState {
@@ -75,7 +86,9 @@ const initialState = {
   error: null,
 };
 
-export const useStore = create<AppState>((set, get) => ({
+export const useStore = create<AppState>()(
+  persist(
+    (set, get) => ({
   ...initialState,
 
   setLanguage: (lang) => set({ language: lang }),
@@ -105,6 +118,8 @@ export const useStore = create<AppState>((set, get) => ({
         age: record.age,
         gender: record.gender,
         image_url: record.imageUrl ?? null,
+        patient_name: record.patientName ?? null,
+        patient_location: record.patientLocation ?? null,
       }).catch((err) => {
         console.warn('Failed to persist screening to Supabase:', err.message);
       });
@@ -149,4 +164,15 @@ export const useStore = create<AppState>((set, get) => ({
       isLoading: false,
       error: null,
     }),
-}));
+    }),
+    {
+      name: 'bari-app-storage',
+      storage: secureStorage,
+      // Only persist user preferences — not ephemeral runtime state
+      partialize: (state) => ({
+        language: state.language,
+        hasSeenOnboarding: state.hasSeenOnboarding,
+      }),
+    },
+  ),
+);

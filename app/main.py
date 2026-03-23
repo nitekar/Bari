@@ -98,11 +98,8 @@ async def lifespan(app: FastAPI):
 
     # ── TFLite interpreters ───────────────────────────────────────────────────
     try:
-        try:
-            from tflite_runtime.interpreter import Interpreter as TFLiteInterpreter
-        except ImportError:
-            import tensorflow as tf
-            TFLiteInterpreter = tf.lite.Interpreter
+        import tensorflow as tf
+        TFLiteInterpreter = tf.lite.Interpreter
 
         for reg_key, path_key in [
             ("vis_interp",   "vis"),

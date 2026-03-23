@@ -9,7 +9,11 @@ import { supabase } from './supabase';
 
 // ── Sign Up ──────────────────────────────────────────────────────────────────
 export async function signUp(email: string, password: string) {
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: 'anemia-screening://' },
+  });
   if (error) throw new Error(error.message);
   return data;
 }

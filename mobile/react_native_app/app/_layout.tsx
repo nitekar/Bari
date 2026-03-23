@@ -10,10 +10,11 @@ import React, { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as Linking from 'expo-linking';
 import type { Session } from '@supabase/supabase-js';
 import { colors } from '../src/shared/theme';
 import { onAuthStateChanged, getSession } from '../src/services/supabaseAuth';
-import { isSupabaseConfigured } from '../src/services/supabase';
+import { isSupabaseConfigured, supabase } from '../src/services/supabase';
 import { useStore } from '../src/store/useStore';
 import { useTranslation } from '../src/i18n';
 
@@ -56,6 +57,29 @@ export default function RootLayout() {
       }
     });
     return unsubscribe;
+  }, []);
+
+  // ── Deep link handler: email confirmation ──────────────────────────────────
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    const handleUrl = async (url: string) => {
+      // Supabase appends tokens in the URL fragment: anemia-screening://#access_token=...
+      const fragment = url.split('#')[1] ?? '';
+      const params = new URLSearchParams(fragment);
+      const access_token = params.get('access_token');
+      const refresh_token = params.get('refresh_token');
+      if (access_token && refresh_token) {
+        await supabase.auth.setSession({ access_token, refresh_token });
+      }
+    };
+
+    // App opened from a cold start via deep link
+    Linking.getInitialURL().then((url) => { if (url) handleUrl(url); });
+
+    // App already open and receives a deep link
+    const sub = Linking.addEventListener('url', ({ url }) => handleUrl(url));
+    return () => sub.remove();
   }, []);
 
   // ── Route protection ───────────────────────────────────────────────────────

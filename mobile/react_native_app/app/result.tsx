@@ -14,8 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../src/shared/theme';
 import { severityColorMap } from '../src/shared/theme/colors';
 import { Card, ResultBadge, Button } from '../src/shared/components';
-import { useStore } from '../src/app/store/useStore';
-import { useAnalyticsStore } from '../src/app/store/analyticsStore';
+import { useStore } from '../src/store/useStore';
+import { useAnalyticsStore } from '../src/store/analyticsStore';
 
 // ── Nutrition icon map ──
 const nutritionIcons: Record<string, keyof typeof Ionicons.glyphMap> = {

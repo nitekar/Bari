@@ -7,9 +7,9 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../src/shared/theme';
 import { Button, Card } from '../src/shared/components';
-import { useStore } from '../src/app/store/useStore';
+import { useStore } from '../src/store/useStore';
 import { usePlatformCamera } from '../src/shared/hooks/usePlatformCamera';
-import { useAnalyticsStore } from '../src/app/store/analyticsStore';
+import { useAnalyticsStore } from '../src/store/analyticsStore';
 
 export default function ImageCaptureScreen() {
   const router = useRouter();

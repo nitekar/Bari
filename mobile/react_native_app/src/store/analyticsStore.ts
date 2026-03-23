@@ -5,7 +5,7 @@
  * Events are also synced to Supabase for cloud persistence.
  */
 import { create } from 'zustand';
-import { saveAnalyticsEvent, getAnalyticsEvents } from '../../services/supabaseDb';
+import { saveAnalyticsEvent, getAnalyticsEvents } from '../services/supabaseDb';
 
 // ── Event Types ──────────────────────────────────────────────────────────────
 

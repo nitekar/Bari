@@ -1,7 +1,5 @@
 /**
- * app/auth.tsx — Authentication screen (Sign In / Sign Up)
- *
- * Baby-color themed email & password form with toggle between modes.
+ * app/auth.tsx — Sign In / Sign Up screen
  */
 import React, { useState, useCallback } from 'react';
 import {
@@ -11,13 +9,22 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../src/shared/theme';
-import { Button, InputField, Card, LoadingOverlay, ErrorMessage } from '../src/shared/components';
+import { colors, spacing, borderRadius } from '../src/shared/theme';
+import { Button, InputField, Card, LoadingOverlay, ErrorMessage, Logo } from '../src/shared/components';
 import { signIn, signUp } from '../src/services/supabaseAuth';
+import { isSupabaseConfigured } from '../src/services/supabase';
+import { useStore } from '../src/store/useStore';
+import { useTranslation } from '../src/i18n';
 
 export default function AuthScreen() {
+  const router = useRouter();
+  const { t } = useTranslation();
+  const setUserId = useStore((s) => s.setUserId);
+
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,19 +39,16 @@ export default function AuthScreen() {
     setError(null);
     setSuccessMessage(null);
 
-    // Validation
     if (!email.trim() || !password.trim()) {
-      setError('Please enter both email and password.');
+      setError(t.auth.fillBoth);
       return;
     }
-
     if (isSignUp && password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError(t.auth.passwordMismatch);
       return;
     }
-
     if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+      setError(t.auth.minPassword);
       return;
     }
 
@@ -52,25 +56,29 @@ export default function AuthScreen() {
     try {
       if (isSignUp) {
         await signUp(email.trim(), password);
-        setSuccessMessage(
-          'Account created! Check your email to confirm, then sign in.',
-        );
+        setSuccessMessage(t.auth.confirmEmail);
         setMode('signin');
       } else {
         await signIn(email.trim(), password);
-        // Auth state listener in _layout.tsx will handle navigation
+        // Auth state listener in _layout.tsx navigates to '/'
       }
     } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please try again.');
+      setError(err.message || t.auth.failed);
     } finally {
       setIsLoading(false);
     }
-  }, [email, password, confirmPassword, isSignUp]);
+  }, [email, password, confirmPassword, isSignUp, t]);
 
   const toggleMode = () => {
     setMode((prev) => (prev === 'signin' ? 'signup' : 'signin'));
     setError(null);
     setSuccessMessage(null);
+  };
+
+  // Guest mode — skip auth and go straight to the app
+  const handleContinueAsGuest = () => {
+    setUserId(null);   // ensure no stale userId
+    router.replace('/');
   };
 
   return (
@@ -80,68 +88,63 @@ export default function AuthScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
-          style={styles.container}
+          style={styles.scroll}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
+          {/* ── Header ── */}
           <View style={styles.header}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="heart-outline" size={40} color={colors.primary} />
-            </View>
-            <Text style={styles.title}>Bari Anemia Screening</Text>
+            <View style={styles.bubble1} />
+            <View style={styles.bubble2} />
+            <Logo size="lg" horizontal={false} showText />
             <Text style={styles.subtitle}>
-              {isSignUp ? 'Create your account' : 'Welcome back'}
+              {isSignUp ? t.auth.createAccount : t.auth.welcomeBack}
             </Text>
           </View>
 
-          {/* Success message */}
+          {/* ── Success banner ── */}
           {successMessage && (
             <Card style={styles.successCard}>
               <View style={styles.successRow}>
-                <Ionicons
-                  name="checkmark-circle"
-                  size={20}
-                  color={colors.severityNormal}
-                />
+                <Ionicons name="checkmark-circle" size={20} color={colors.severityNormal} />
                 <Text style={styles.successText}>{successMessage}</Text>
               </View>
             </Card>
           )}
 
-          {/* Form */}
+          {/* ── Form ── */}
           <Card style={styles.formCard}>
             <InputField
-              label="Email"
+              label={t.auth.email}
               value={email}
               onChangeText={setEmail}
               placeholder="you@example.com"
               keyboardType="email-address"
+              autoCapitalize="none"
             />
-
             <InputField
-              label="Password"
+              label={t.auth.password}
               value={password}
               onChangeText={setPassword}
-              placeholder="At least 6 characters"
+              placeholder="••••••••"
               secureTextEntry
             />
-
             {isSignUp && (
               <InputField
-                label="Confirm Password"
+                label={t.auth.confirmPassword}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                placeholder="Re-enter password"
+                placeholder="••••••••"
                 secureTextEntry
               />
             )}
 
             {error && <ErrorMessage message={error} />}
 
-            <View style={styles.submitContainer}>
+            <View style={styles.submitWrap}>
               <Button
-                title={isSignUp ? 'Create Account' : 'Sign In'}
+                title={isSignUp ? t.auth.createAccountBtn : t.auth.signIn}
                 onPress={handleSubmit}
                 variant="primary"
                 loading={isLoading}
@@ -158,96 +161,136 @@ export default function AuthScreen() {
             </View>
           </Card>
 
-          {/* Toggle link */}
-          <View style={styles.toggleContainer}>
+          {/* ── Toggle sign-in / sign-up ── */}
+          <View style={styles.toggleRow}>
             <Text style={styles.toggleText}>
-              {isSignUp
-                ? 'Already have an account?'
-                : "Don't have an account?"}
+              {isSignUp ? t.auth.hasAccount : t.auth.noAccount}
             </Text>
-            <Button
-              title={isSignUp ? 'Sign In' : 'Sign Up'}
-              onPress={toggleMode}
-              variant="outline"
-            />
+            <TouchableOpacity onPress={toggleMode} style={styles.toggleBtn}>
+              <Text style={styles.toggleLink}>
+                {isSignUp ? t.auth.signIn : t.auth.signUp}
+              </Text>
+            </TouchableOpacity>
           </View>
+
+          {/* ── Divider ── */}
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* ── Continue as Guest ── */}
+          <Button
+            title="Continue as Guest"
+            onPress={handleContinueAsGuest}
+            variant="secondary"
+            icon={<Ionicons name="person-outline" size={20} color={colors.text} />}
+          />
+
+          {!isSupabaseConfigured && (
+            <Text style={styles.devNote}>
+              ⚙️  Supabase not configured — sign-in will fail. Use guest mode for testing.
+            </Text>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
 
       <LoadingOverlay
         visible={isLoading}
-        message={isSignUp ? 'Creating account…' : 'Signing in…'}
+        message={isSignUp ? t.auth.creatingAccount : t.auth.signingIn}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  flex: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-  },
+  wrapper: { flex: 1, backgroundColor: colors.background },
+  flex: { flex: 1 },
+  scroll: { flex: 1 },
   content: {
     padding: spacing.lg,
-    paddingTop: spacing.xxl,
+    paddingTop: 0,
     paddingBottom: spacing.xxl,
   },
+  // ── Header ──
   header: {
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    paddingTop: 64,
+    paddingBottom: 32,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.md,
+  bubble1: {
+    position: 'absolute',
+    top: -20,
+    right: -30,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.secondary + '35',
   },
-  title: {
-    ...typography.title,
-    color: colors.primaryDark,
-    textAlign: 'center',
+  bubble2: {
+    position: 'absolute',
+    top: 10,
+    left: -40,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: colors.accent + '40',
   },
   subtitle: {
-    ...typography.body,
+    fontSize: 16,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
+    marginTop: 12,
+    fontWeight: '500',
   },
-  formCard: {
-    paddingVertical: spacing.lg,
-  },
+  // ── Success ──
   successCard: {
     backgroundColor: colors.severityNormalBg,
     marginBottom: spacing.md,
   },
-  successRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+  successRow: { flexDirection: 'row', alignItems: 'center' },
   successText: {
-    ...typography.caption,
+    fontSize: 13,
     color: colors.text,
     marginLeft: spacing.sm,
     flex: 1,
   },
-  submitContainer: {
-    marginTop: spacing.lg,
-  },
-  toggleContainer: {
+  // ── Form ──
+  formCard: { paddingVertical: spacing.lg, marginBottom: spacing.md },
+  submitWrap: { marginTop: spacing.lg },
+  // ── Toggle ──
+  toggleRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.lg,
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
-  toggleText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
+  toggleText: { fontSize: 14, color: colors.textSecondary },
+  toggleBtn: { paddingVertical: 4 },
+  toggleLink: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.primaryDark,
+  },
+  // ── Divider ──
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+    gap: spacing.md,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  dividerText: { fontSize: 13, color: colors.textLight },
+  // ── Dev note ──
+  devNote: {
+    marginTop: spacing.lg,
+    fontSize: 12,
+    color: colors.textLight,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    lineHeight: 18,
   },
 });

@@ -13,7 +13,7 @@ import { attachMockAdapter } from './mockAdapter';
  *   http://192.168.1.100:8000
  *   https://your-api.railway.app
  */
-const BASE_URL = 'http://YOUR_BACKEND_URL';
+const BASE_URL = 'https://web-production-c7c1.up.railway.app';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -52,9 +52,8 @@ api.interceptors.response.use(
   },
 );
 
-// ── Attach mock adapter in dev mode ──────────────────────────────────────────
-// Activated when __DEV__ is true OR backend URL hasn't been configured
-if (__DEV__ || BASE_URL.includes('YOUR_BACKEND_URL')) {
+// ── Attach mock adapter only when backend URL is not configured ───────────────
+if (BASE_URL.includes('YOUR_BACKEND_URL')) {
   attachMockAdapter(api);
 }
 

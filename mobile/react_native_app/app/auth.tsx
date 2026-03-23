@@ -43,6 +43,11 @@ export default function AuthScreen() {
       setError(t.auth.fillBoth);
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError(t.auth.invalidEmail);
+      return;
+    }
     if (isSignUp && password !== confirmPassword) {
       setError(t.auth.passwordMismatch);
       return;

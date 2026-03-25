@@ -25,76 +25,82 @@ interface EducationSection {
 const EDUCATION_DATA: EducationSection[] = [
   {
     id: 'what',
-    title: 'What is Anemia?',
+    title: 'What is Anemia in Children?',
     icon: 'information-circle-outline',
     iconColor: colors.primary,
     content: [
-      'Anemia is a condition where the body lacks enough healthy red blood cells to carry adequate oxygen to tissues.',
-      'It can be caused by iron deficiency, vitamin B12 deficiency, chronic diseases, or genetic conditions.',
-      'The World Health Organization estimates that anemia affects approximately 1.62 billion people globally.',
-      'Early detection and proper nutrition can help manage and prevent anemia effectively.',
+      'Anemia in children occurs when the blood does not have enough healthy red blood cells to carry oxygen to the body\'s organs and muscles.',
+      'In children under 5, the most common cause is iron deficiency — a critical nutrient required for brain development, muscle growth, and immune function.',
+      'The WHO estimates that 42% of children under 5 globally are affected by anemia, with the highest burden in Sub-Saharan Africa.',
+      'Untreated anemia during early childhood can permanently impair cognitive development, physical growth, and school performance.',
+      'Early detection through conjunctiva screening and prompt nutritional support can prevent long-term harm.',
     ],
   },
   {
-    id: 'symptoms',
-    title: 'Common Symptoms',
-    icon: 'fitness-outline',
+    id: 'growth',
+    title: 'How Anemia Affects Child Growth',
+    icon: 'body-outline',
     iconColor: colors.secondaryDark,
     content: [
-      '😮‍💨  Fatigue and weakness',
-      '😵‍💫  Dizziness or lightheadedness',
-      '💛  Pale or yellowish skin',
-      '💓  Irregular or fast heartbeat',
-      '🫁  Shortness of breath',
-      '🥶  Cold hands and feet',
-      '🤕  Headaches',
-      '💅  Brittle nails',
+      '🧠  Brain development: Iron is essential for myelination — the process of building the nerve fiber insulation needed for fast thinking and learning. Iron deficiency during the first 1,000 days of life leads to irreversible cognitive delays.',
+      '📏  Height and weight: Anemic children have reduced appetite and poor nutrient absorption, leading to stunted growth and underweight status.',
+      '💪  Muscle strength: Iron deficiency reduces oxygen delivery to muscles, causing fatigue, weakness, and poor physical activity tolerance.',
+      '🛡️  Immune defense: Iron supports immune cell production. Anemic children have weaker immunity and are more vulnerable to infections such as pneumonia and diarrhea.',
+      '😴  Energy and mood: Chronic fatigue from anemia causes irritability, poor concentration, and reduced engagement in learning activities.',
     ],
   },
   {
     id: 'iron',
-    title: 'Iron-Rich Foods',
+    title: 'Iron-Rich Foods for Children',
     icon: 'leaf-outline',
     iconColor: colors.accentDark,
     content: [
-      '🥩  Lean red meat and liver',
-      '🐔  Poultry (chicken, turkey)',
-      '🐟  Fish and shellfish (oysters, clams)',
-      '🥬  Dark leafy greens (spinach, kale)',
-      '🫘  Legumes (lentils, beans, chickpeas)',
-      '🥜  Nuts and seeds (pumpkin seeds)',
-      '🥣  Fortified cereals and bread',
-      '🫛  Tofu and tempeh',
+      '🥩  Liver and organ meats — the richest source of heme iron; even small amounts weekly significantly raise hemoglobin levels in young children.',
+      '🥬  Dark leafy greens (spinach, amaranth, moringa) — locally available sources of non-heme iron. Moringa leaves are especially iron-dense and widely accessible in Rwanda.',
+      '🫘  Legumes (beans, lentils, soybeans) — a primary iron source in plant-based diets. Soaking and fermenting legumes before cooking increases iron bioavailability.',
+      '🥚  Eggs — provide both iron and protein, supporting red blood cell production and muscle growth simultaneously.',
+      '🐟  Small dried fish — widely available, affordable, and rich in both iron and zinc which together support growth and immunity.',
+      '🥣  Fortified porridges (enriched with iron and zinc) — designed specifically for infants and toddlers to meet daily iron requirements during rapid growth phases.',
     ],
   },
   {
-    id: 'vitc',
-    title: 'Vitamin C Foods',
+    id: 'absorption',
+    title: 'Maximising Iron Absorption',
     icon: 'sunny-outline',
     iconColor: '#FFB74D',
     content: [
-      '🍊  Citrus fruits (oranges, lemons, grapefruit)',
-      '🫑  Bell peppers (red and green)',
-      '🍓  Strawberries and kiwi',
-      '🥦  Broccoli and Brussels sprouts',
-      '🍅  Tomatoes and tomato juice',
-      '🥔  Potatoes (with skin)',
-      '',
-      '💡 Vitamin C enhances iron absorption when consumed with iron-rich foods.',
+      '🍊  Always pair iron-rich foods with Vitamin C sources (orange, tomato, guava, passion fruit). Vitamin C converts non-heme iron into a form the body absorbs 3× more efficiently.',
+      '☕  Avoid giving tea, coffee, or cow\'s milk during or directly after iron-rich meals — tannins and calcium block iron absorption significantly.',
+      '🍋  Add lemon juice or tomato to bean dishes at serving time to boost iron uptake without changing the meal.',
+      '🫙  Ferment or soak grains and legumes overnight before cooking — this reduces phytates, the compounds that bind iron and prevent absorption.',
+      '💊  If a child is diagnosed with moderate or severe anemia, a doctor may prescribe iron drops or syrup. Nutritional changes support supplementation but cannot replace it at this stage.',
+    ],
+  },
+  {
+    id: 'feeding',
+    title: 'Feeding Guidelines by Age',
+    icon: 'restaurant-outline',
+    iconColor: '#5B9EC9',
+    content: [
+      '👶  0–6 months: Exclusive breastfeeding provides all iron needs. Mother\'s diet should include iron-rich foods to maintain adequate breast milk quality.',
+      '🍼  6–12 months: Introduce iron-rich first foods from 6 months. Start with iron-fortified porridge, mashed beans, or pureed liver. These complement breast milk which is now insufficient alone for iron needs.',
+      '🧒  1–3 years: Serve 3 meals and 2 nutritious snacks daily. Include a small portion of animal-source food (liver, egg, fish) at least 3–4 times per week to meet the high iron demands of rapid growth.',
+      '👧  4–5 years: Ensure varied diet across all food groups. At this age, poor appetite from anemia is common — make meals appealing, colorful, and served in small portions frequently.',
+      '📌  All ages: Never give cow\'s milk as a main drink before 12 months — it is low in iron and inhibits absorption of iron from other foods.',
     ],
   },
   {
     id: 'prevention',
-    title: 'Prevention Tips',
+    title: 'Prevention at Community Level',
     icon: 'shield-checkmark-outline',
     iconColor: '#7E57C2',
     content: [
-      'Eat a balanced diet rich in iron and vitamins',
-      'Pair iron-rich foods with vitamin C sources',
-      'Avoid tea or coffee during meals (they reduce iron absorption)',
-      'Get regular blood tests, especially during pregnancy',
-      'Consider iron supplements if recommended by a doctor',
-      'Cook in iron cookware to boost dietary iron intake',
+      'Promote kitchen gardens growing moringa, amaranth, and other iron-rich vegetables for household food security.',
+      'Encourage use of iron cooking pots — cooking acidic foods (tomato-based stews) in cast iron pots can meaningfully increase dietary iron.',
+      'Refer all children with Moderate or Severe screening results immediately to a health facility for hemoglobin testing and treatment.',
+      'Educate caregivers that good nutrition must continue even after a child recovers — anemia recurrence is common without sustained dietary change.',
+      'Schedule follow-up screenings as recommended: every 90 days for Mild, every 30 days for Moderate, every 14 days for Severe cases.',
+      'Deworming every 6 months in endemic areas significantly improves iron status — intestinal worms are a major contributor to anemia in children.',
     ],
   },
 ];
@@ -148,9 +154,9 @@ export default function EducationScreen() {
         <View style={styles.heroIcon}>
           <Ionicons name="school-outline" size={32} color={colors.primary} />
         </View>
-        <Text style={styles.heroTitle}>Understanding Anemia</Text>
+        <Text style={styles.heroTitle}>Nutrition & Child Growth</Text>
         <Text style={styles.heroSubtitle}>
-          Learn about symptoms, prevention, and the foods that can help.
+          How iron deficiency affects child development and what to do about it.
         </Text>
       </View>
 

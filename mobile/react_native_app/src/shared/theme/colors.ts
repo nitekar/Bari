@@ -53,6 +53,7 @@ export const colors = {
 /** Map severity label to color */
 export const severityColorMap: Record<string, string> = {
   'Non-Anemic': colors.severityNormal,
+  'Anemic':     colors.severityModerate,   // binary visual result
   'Mild':       colors.severityMild,
   'Moderate':   colors.severityModerate,
   'Severe':     colors.severitySevere,
@@ -61,6 +62,7 @@ export const severityColorMap: Record<string, string> = {
 /** Map severity label to background color */
 export const severityBgMap: Record<string, string> = {
   'Non-Anemic': colors.severityNormalBg,
+  'Anemic':     colors.severityModerateBg, // binary visual result
   'Mild':       colors.severityMildBg,
   'Moderate':   colors.severityModerateBg,
   'Severe':     colors.severitySevereBg,
@@ -69,6 +71,7 @@ export const severityBgMap: Record<string, string> = {
 /** Next screening follow-up interval by severity (days) */
 export const nextScreeningDays: Record<string, number> = {
   'Non-Anemic': 180,
+  'Anemic':      30,  // binary result — recommend full screen in 30 days
   'Mild':        90,
   'Moderate':    30,
   'Severe':      14,

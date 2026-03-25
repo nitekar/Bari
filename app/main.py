@@ -25,8 +25,13 @@ from fastapi.responses import JSONResponse
 
 # ── Local imports ─────────────────────────────────────────────────────────────
 from app.schemas.response import HealthResponse, PredictionResponse
-from app.services.inference import build_probabilities_dict, predict_multimodal
-from app.services.nutrition import get_full_guidance
+from app.services.inference import (
+    build_probabilities_dict,
+    build_visual_probabilities_dict,
+    predict_multimodal,
+    predict_image,
+)
+from app.services.nutrition import get_full_guidance, get_binary_guidance
 from app.services.preprocessing import preprocess_image_bytes, preprocess_tabular
 from app.utils.image_utils import validate_image_content_type
 
@@ -46,14 +51,16 @@ MODEL_PATHS: dict[str, str] = {
     "tab_nh":  os.environ.get("TAB_NH_PATH",  os.path.join(_ROOT, "Notebook", "models", "tabular_no_hb.pkl")),
     "mm_wh":   os.environ.get("MM_WH_PATH",   os.path.join(_ROOT, "models", "saved_models", "multimodal_model.tflite")),
     "mm_nh":   os.environ.get("MM_NH_PATH",   os.path.join(_ROOT, "models", "saved_models", "multimodal_no_hb_model.tflite")),
+    "visual":  os.environ.get("VISUAL_PATH",  os.path.join(_ROOT, "models", "saved_models", "visual_model.tflite")),
 }
 
 # ── Model registry (populated at startup) ────────────────────────────────────
 _registry: dict[str, Any] = {
-    "scaler_wh":    None,
-    "scaler_nh":    None,
-    "mm_wh_interp": None,
-    "mm_nh_interp": None,
+    "scaler_wh":     None,
+    "scaler_nh":     None,
+    "mm_wh_interp":  None,
+    "mm_nh_interp":  None,
+    "visual_interp": None,
 }
 
 
@@ -78,7 +85,7 @@ async def lifespan(app: FastAPI):
         import tensorflow as tf
         TFLiteInterpreter = tf.lite.Interpreter
 
-        for reg_key, path_key in [("mm_wh_interp", "mm_wh"), ("mm_nh_interp", "mm_nh")]:
+        for reg_key, path_key in [("mm_wh_interp", "mm_wh"), ("mm_nh_interp", "mm_nh"), ("visual_interp", "visual")]:
             path = MODEL_PATHS[path_key]
             if os.path.exists(path):
                 interp = TFLiteInterpreter(model_path=path)
@@ -157,6 +164,7 @@ async def health_check() -> HealthResponse:
         models_loaded={
             "multimodal_with_hb":  _registry["mm_wh_interp"] is not None,
             "multimodal_no_hb":    _registry["mm_nh_interp"] is not None,
+            "visual_binary":       _registry["visual_interp"] is not None,
         },
     )
 
@@ -230,3 +238,60 @@ async def predict_multimodal_endpoint(
 
     logger.info(f"/predict/multimodal → pred_idx={pred} ({conf:.3f}) | hb={hb_level}")
     return _make_response(pred, conf, probs, age=age, gender=gender)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ENDPOINT 3 — Quick image-only prediction (binary: Non-Anemic / Anemic)
+# ─────────────────────────────────────────────────────────────────────────────
+@app.post(
+    "/predict/image",
+    response_model=PredictionResponse,
+    tags=["Prediction"],
+    summary="Quick binary prediction from conjunctiva image only (Anemic / Non-Anemic)",
+)
+async def predict_image_endpoint(
+    file: UploadFile = File(..., description="Conjunctiva image (JPEG / PNG)"),
+) -> PredictionResponse:
+    """
+    **Quick binary screen**
+
+    Uses the visual-only CNN model to classify the conjunctiva image as
+    Non-Anemic or Anemic. No clinical data required.
+
+    For a full 4-class severity classification use `/predict/multimodal`.
+    """
+    if _registry["visual_interp"] is None:
+        raise HTTPException(503, "Visual model is not loaded.")
+
+    try:
+        validate_image_content_type(file.content_type or "")
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(422, "Uploaded file is empty.")
+
+    try:
+        img_arr = preprocess_image_bytes(raw)
+    except Exception as exc:
+        raise HTTPException(422, f"Image preprocessing error: {exc}") from exc
+
+    try:
+        pred, conf, probs = predict_image(img_arr, _registry["visual_interp"])
+    except Exception as exc:
+        logger.error(f"Visual model inference failed: {exc}", exc_info=True)
+        raise HTTPException(500, "Visual model inference failed.") from exc
+
+    from app.services.inference import VISUAL_CLASS_NAMES
+    guide = get_binary_guidance(pred)
+
+    logger.info(f"/predict/image → pred_idx={pred} ({VISUAL_CLASS_NAMES[pred]}) conf={conf:.3f}")
+    return PredictionResponse(
+        prediction=VISUAL_CLASS_NAMES[pred],
+        confidence=round(conf, 4),
+        class_probabilities=build_visual_probabilities_dict(probs),
+        nutrition=guide["advice"],
+        recommended_foods=guide["foods"],
+        referral_action=guide["referral"],
+    )

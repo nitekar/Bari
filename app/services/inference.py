@@ -195,10 +195,21 @@ def explain_tabular(
     return {name: round(float(val), 6) for name, val in zip(feature_names, mean_abs)}
 
 
-# ── Shared output builder ─────────────────────────────────────────────────────
+# ── Shared output builders ────────────────────────────────────────────────────
 def build_probabilities_dict(probs: np.ndarray) -> dict[str, float]:
-    """Map class names to rounded probability values."""
+    """Map 4-class names to rounded probability values."""
     return {
         name: round(float(p), 6)
         for name, p in zip(CLASS_NAMES, probs)
+    }
+
+
+VISUAL_CLASS_NAMES: list[str] = ["Non-Anemic", "Anemic"]
+
+
+def build_visual_probabilities_dict(probs: np.ndarray) -> dict[str, float]:
+    """Map binary visual class names to rounded probability values."""
+    return {
+        name: round(float(p), 6)
+        for name, p in zip(VISUAL_CLASS_NAMES, probs)
     }

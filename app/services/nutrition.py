@@ -111,6 +111,37 @@ _FULL_GUIDE: Dict[int, Dict[str, Any]] = {
 }
 
 
+# ── Binary (image-only) guidance — "Anemic" vs "Non-Anemic" ──────────────────
+VISUAL_CLASS_NAMES: list[str] = ["Non-Anemic", "Anemic"]
+
+_BINARY_GUIDE: dict[int, dict] = {
+    0: _FULL_GUIDE[0],   # Non-Anemic — same as 4-class
+    1: {
+        "label": "Anemic",
+        "urgency": "Moderate",
+        "advice": (
+            "Anemia detected from conjunctiva image. "
+            "A full clinical assessment with hemoglobin measurement is recommended."
+        ),
+        "foods": [
+            "Iron-rich foods: red meat, liver, spinach",
+            "Vitamin C sources to improve absorption (citrus, bell peppers)",
+            "Legumes: lentils, beans",
+            "Fortified cereals and grains",
+            "Eggs and dairy",
+        ],
+        "supplements": ["Consult a physician before starting iron supplements."],
+        "referral": "Schedule a clinical evaluation with hemoglobin test to determine severity.",
+        "followup_weeks": 4,
+    },
+}
+
+
+def get_binary_guidance(class_idx: int) -> dict:
+    """Return guidance for binary visual model (0=Non-Anemic, 1=Anemic)."""
+    return dict(_BINARY_GUIDE.get(class_idx, _BINARY_GUIDE[1]))
+
+
 # ── Public API ─────────────────────────────────────────────────────────────────
 def get_short_advice(class_idx: int) -> str:
     """Return a single-line nutrition note for the predicted class."""

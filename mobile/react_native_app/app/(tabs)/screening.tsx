@@ -1,5 +1,8 @@
 /**
  * app/screening.tsx — Main screening form
+ * Supports two modes:
+ *   Quick Screen — image only → binary (Anemic / Non-Anemic)
+ *   Full Screen  — image + clinical data → 4-class severity
  */
 import React, { useState, useCallback } from 'react';
 import {
@@ -9,6 +12,7 @@ import {
   StyleSheet,
   Image,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,13 +27,17 @@ import {
 } from '../../src/shared/components';
 import { useStore } from '../../src/store/useStore';
 import { useTranslation } from '../../src/i18n';
-import { predictMultimodal } from '../../src/services/screeningService';
-import type { ScreeningResult } from '../../src/services/screeningService';
+import { predictImage, predictMultimodal } from '../../src/services/screeningService';
 import { useAnalyticsStore } from '../../src/store/analyticsStore';
+
+type ScreeningMode = 'quick' | 'full';
 
 export default function ScreeningScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+
+  // ── Mode ──
+  const [mode, setMode] = useState<ScreeningMode>('full');
 
   // ── Local form state ──
   const [patientName, setPatientName] = useState('');
@@ -55,39 +63,43 @@ export default function ScreeningScreen() {
   const hasAge = !isNaN(ageNum) && ageNum >= 0;
   const hasImage = !!imageUri;
 
-  // ── Submit handler — always multimodal ──
+  const canSubmit = mode === 'quick' ? hasImage : hasAge && hasImage;
+
+  // ── Submit ──
   const handleSubmit = useCallback(async () => {
-    if (!hasAge) {
-      Alert.alert('Missing Data', 'Please enter the patient age.');
+    if (!hasImage) {
+      Alert.alert('Missing Image', 'Please add a conjunctiva image to proceed.');
       return;
     }
-    if (!hasImage) {
-      Alert.alert('Missing Data', 'Please add a conjunctiva image to proceed.');
+    if (mode === 'full' && !hasAge) {
+      Alert.alert('Missing Data', 'Please enter the patient age.');
       return;
     }
 
     setLoading(true);
     setError(null);
-    trackEvent('screening_started', { mode: 'multimodal' });
+    trackEvent('screening_started', { mode });
 
     try {
-      const result = await predictMultimodal(
-        { imageUri: imageUri!, age: ageNum, gender, hb_level: hbNum },
-        userId,
-      );
+      const result = mode === 'quick'
+        ? await predictImage(imageUri!, userId)
+        : await predictMultimodal(
+            { imageUri: imageUri!, age: ageNum, gender, hb_level: hbNum },
+            userId,
+          );
 
       setResult(result);
       setLoading(false);
 
-      trackEvent('screening_completed', { severity: result.prediction, confidence: result.confidence });
+      trackEvent('screening_completed', { severity: result.prediction, confidence: result.confidence, mode });
       addToHistory({
         id: Date.now().toString(),
         date: new Date().toISOString(),
         prediction: result.prediction,
         confidence: result.confidence,
-        mode: 'multimodal',
-        age: ageNum,
-        gender,
+        mode: mode === 'quick' ? 'image' : 'multimodal',
+        age: mode === 'full' ? ageNum : undefined,
+        gender: mode === 'full' ? gender : undefined,
         imageUrl: result.imageStoragePath,
         patientName: patientName.trim() || undefined,
         patientLocation: patientLocation.trim() || undefined,
@@ -97,7 +109,7 @@ export default function ScreeningScreen() {
     } catch (err: any) {
       setError(err.message || 'Screening failed. Please try again.');
     }
-  }, [age, gender, hbLevel, imageUri, patientName, patientLocation]);
+  }, [mode, age, gender, hbLevel, imageUri, patientName, patientLocation]);
 
   return (
     <View style={styles.wrapper}>
@@ -106,7 +118,46 @@ export default function ScreeningScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Patient Information Section */}
+        {/* Mode Toggle */}
+        <View style={styles.modeToggle}>
+          <TouchableOpacity
+            style={[styles.modeBtn, mode === 'quick' && styles.modeBtnActive]}
+            onPress={() => setMode('quick')}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="eye-outline"
+              size={16}
+              color={mode === 'quick' ? colors.white : colors.primary}
+            />
+            <Text style={[styles.modeBtnText, mode === 'quick' && styles.modeBtnTextActive]}>
+              Quick Screen
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modeBtn, mode === 'full' && styles.modeBtnActive]}
+            onPress={() => setMode('full')}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="clipboard-outline"
+              size={16}
+              color={mode === 'full' ? colors.white : colors.primary}
+            />
+            <Text style={[styles.modeBtnText, mode === 'full' && styles.modeBtnTextActive]}>
+              Full Screen
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Mode description */}
+        <Text style={styles.modeHint}>
+          {mode === 'quick'
+            ? 'Image only — detects Anemic / Non-Anemic'
+            : 'Image + clinical data — classifies severity (Mild / Moderate / Severe)'}
+        </Text>
+
+        {/* Patient Info — always shown */}
         <Text style={styles.sectionTitle}>{t.screening.patientInfo}</Text>
 
         <InputField
@@ -123,23 +174,28 @@ export default function ScreeningScreen() {
           placeholder="e.g. Kigali, Rwanda"
         />
 
-        <InputField
-          label={t.screening.patientAge}
-          value={age}
-          onChangeText={setAge}
-          placeholder={t.screening.agePlaceholder}
-          keyboardType="numeric"
-        />
+        {/* Clinical fields — Full Screen only */}
+        {mode === 'full' && (
+          <>
+            <InputField
+              label={t.screening.patientAge}
+              value={age}
+              onChangeText={setAge}
+              placeholder={t.screening.agePlaceholder}
+              keyboardType="numeric"
+            />
 
-        <GenderToggle value={gender} onChange={setGender} />
+            <GenderToggle value={gender} onChange={setGender} />
 
-        <InputField
-          label={`${t.screening.hemoglobin} — ${t.screening.optional}`}
-          value={hbLevel}
-          onChangeText={setHbLevel}
-          placeholder={t.screening.hbPlaceholder}
-          keyboardType="decimal-pad"
-        />
+            <InputField
+              label={`${t.screening.hemoglobin} — ${t.screening.optional}`}
+              value={hbLevel}
+              onChangeText={setHbLevel}
+              placeholder={t.screening.hbPlaceholder}
+              keyboardType="decimal-pad"
+            />
+          </>
+        )}
 
         {/* Image Section */}
         <Text style={styles.sectionTitle}>Conjunctiva Image</Text>
@@ -175,11 +231,11 @@ export default function ScreeningScreen() {
         {/* Submit */}
         <View style={styles.submitContainer}>
           <Button
-            title="Run Screening"
+            title={mode === 'quick' ? 'Quick Screen' : 'Run Full Screening'}
             onPress={handleSubmit}
             variant="primary"
             loading={isLoading}
-            disabled={!hasAge && !hasImage}
+            disabled={!canSubmit}
             icon={
               !isLoading ? (
                 <Ionicons name="pulse-outline" size={20} color={colors.white} />
@@ -189,7 +245,10 @@ export default function ScreeningScreen() {
         </View>
       </ScrollView>
 
-      <LoadingOverlay visible={isLoading} message="Analyzing patient data…" />
+      <LoadingOverlay
+        visible={isLoading}
+        message={mode === 'quick' ? 'Analyzing image…' : 'Analyzing patient data…'}
+      />
     </View>
   );
 }
@@ -206,22 +265,38 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingBottom: 120,
   },
-  modeCard: {
-    backgroundColor: colors.primary + '15',
-    marginBottom: spacing.lg,
+  // ── Mode toggle ──
+  modeToggle: {
+    flexDirection: 'row',
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: borderRadius.md,
+    padding: 4,
+    marginBottom: spacing.sm,
   },
-  modeRow: {
+  modeBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.sm,
+    gap: 6,
   },
-  modeText: {
+  modeBtnActive: {
+    backgroundColor: colors.primary,
+  },
+  modeBtnText: {
+    ...typography.captionBold,
+    color: colors.primary,
+  },
+  modeBtnTextActive: {
+    color: colors.white,
+  },
+  modeHint: {
     ...typography.caption,
     color: colors.textSecondary,
-    marginLeft: spacing.sm,
-  },
-  modeBold: {
-    fontWeight: '700',
-    color: colors.primary,
+    textAlign: 'center',
+    marginBottom: spacing.md,
   },
   sectionTitle: {
     ...typography.subtitle,

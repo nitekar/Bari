@@ -4,7 +4,6 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 
 type LogoSize = 'sm' | 'md' | 'lg';
@@ -28,19 +27,10 @@ export default function Logo({ size = 'md', showText = true, horizontal = true }
     <View
       style={[
         styles.circle,
-        { width: s.circle, height: s.circle, borderRadius: s.circle / 2 },
+        { width: s.circle, height: s.circle, borderRadius: s.circle * 0.28 },
       ]}
     >
-      <Ionicons name="eye" size={s.icon} color={colors.white} />
-      {/* Heart badge — bottom-right */}
-      <View
-        style={[
-          styles.heartBadge,
-          { width: s.heart + 4, height: s.heart + 4, borderRadius: (s.heart + 4) / 2 },
-        ]}
-      >
-        <Ionicons name="heart" size={s.heart} color={colors.secondary} />
-      </View>
+      <Text style={[styles.bLetter, { fontSize: s.icon, lineHeight: s.icon * 1.2 }]}>B</Text>
     </View>
   );
 
@@ -74,18 +64,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heartBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+  bLetter: {
+    color: colors.white,
+    fontWeight: '800',
+    letterSpacing: -0.5,
   },
   labelH: {
     flexDirection: 'column',

@@ -12,7 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Rect, Text as SvgText } from 'react-native-svg';
 import { colors, spacing, borderRadius, shadows } from '../../src/shared/theme';
-import { severityColorMap, severityBgMap } from '../../src/shared/theme/colors';
+import { severityColorMap, severityBgMap, nextScreeningDays } from '../../src/shared/theme/colors';
 import { Card, ResultBadge } from '../../src/shared/components';
 import { useStore, type ScreeningRecord } from '../../src/store/useStore';
 import { useTranslation } from '../../src/i18n';
@@ -149,20 +149,40 @@ export default function HistoryScreen() {
             </View>
           </View>
 
-          {/* Bottom row: date + mode + confidence */}
+          {/* Bottom row: age + date + confidence */}
           <View style={styles.historyBottomRow}>
+            {item.age != null && (
+              <View style={styles.metaChip}>
+                <Ionicons name="person-outline" size={11} color={colors.textSecondary} />
+                <Text style={styles.metaText}>{item.age} yrs</Text>
+              </View>
+            )}
             <View style={styles.metaChip}>
               <Ionicons name="calendar-outline" size={11} color={colors.textSecondary} />
               <Text style={styles.metaText}>{dateStr} · {timeStr}</Text>
-            </View>
-            <View style={styles.metaChip}>
-              <Ionicons name="layers-outline" size={11} color={colors.textSecondary} />
-              <Text style={styles.metaText}>{item.mode}</Text>
             </View>
             <View style={[styles.confBadge, { backgroundColor: severityColor }]}>
               <Text style={styles.confText}>{Math.round(item.confidence * 100)}%</Text>
             </View>
           </View>
+
+          {/* Next screening reminder */}
+          {(() => {
+            const days = nextScreeningDays[item.prediction] ?? 90;
+            const nextDate = new Date(item.date);
+            nextDate.setDate(nextDate.getDate() + days);
+            const isPast = nextDate < new Date();
+            const nextDateStr = nextDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+            return (
+              <View style={[styles.reminderRow, { backgroundColor: isPast ? colors.severitySevereBg : colors.accentLight }]}>
+                <Ionicons name="alarm-outline" size={12} color={isPast ? colors.severitySevere : colors.accentDark} />
+                <Text style={[styles.reminderText, { color: isPast ? colors.severitySevere : colors.accentDark }]}>
+                  {isPast ? 'Follow-up overdue — ' : 'Next screening: '}
+                  <Text style={{ fontWeight: '700' }}>{nextDateStr}</Text>
+                </Text>
+              </View>
+            );
+          })()}
         </View>
       </View>
     );
@@ -285,6 +305,12 @@ const styles = StyleSheet.create({
   metaText: { fontSize: 11, color: colors.textSecondary, textTransform: 'capitalize' },
   confBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, marginLeft: 'auto' as any },
   confText: { fontSize: 11, fontWeight: '700', color: colors.white },
+  reminderRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    marginTop: 8, paddingHorizontal: 8, paddingVertical: 5,
+    borderRadius: 7,
+  },
+  reminderText: { fontSize: 11, flex: 1 },
   // ── Empty ──
   empty: {
     flex: 1,

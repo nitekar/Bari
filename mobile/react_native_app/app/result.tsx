@@ -20,6 +20,7 @@ import { useAnalyticsStore } from '../src/store/analyticsStore';
 // ── Nutrition icon map ──
 const nutritionIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   'Non-Anemic': 'leaf-outline',
+  'Anemic':     'medical-outline',
   Mild: 'restaurant-outline',
   Moderate: 'medical-outline',
   Severe: 'alert-outline',
@@ -50,7 +51,9 @@ function ResultScreen() {
     severityColorMap[result.prediction] || colors.primary;
 
   const needsReferral =
-    result.prediction === 'Moderate' || result.prediction === 'Severe';
+    result.prediction === 'Anemic' ||
+    result.prediction === 'Moderate' ||
+    result.prediction === 'Severe';
 
   // ── Class Probabilities Bar Chart ──
   const renderProbabilities = () => {
@@ -124,11 +127,15 @@ function ResultScreen() {
               <Text style={[styles.nudgeTitle, { color: severityColor }]}>
                 {result.prediction === 'Severe'
                   ? 'Urgent: See a Doctor'
+                  : result.prediction === 'Anemic'
+                  ? 'Follow-up: Clinical Test Recommended'
                   : 'Recommended: See a Doctor'}
               </Text>
               <Text style={styles.nudgeDescription}>
                 {result.prediction === 'Severe'
                   ? 'This result indicates severe anemia. Seek medical attention immediately.'
+                  : result.prediction === 'Anemic'
+                  ? 'Anemia detected from image. A hemoglobin test is needed to determine severity.'
                   : 'This result suggests moderate anemia. Please consult a healthcare provider.'}
               </Text>
             </View>
@@ -216,6 +223,8 @@ function ResultScreen() {
             <Text style={styles.adviceText}>
               {result.prediction === 'Non-Anemic'
                 ? 'Great result! Schedule a routine follow-up in 6 months to monitor iron levels.'
+                : result.prediction === 'Anemic'
+                ? 'Anemia detected. Get a full clinical screen with hemoglobin test to determine severity. Follow up in 30 days.'
                 : result.prediction === 'Mild'
                 ? 'Mild anemia detected. Re-screen in 3 months to track improvement.'
                 : result.prediction === 'Moderate'

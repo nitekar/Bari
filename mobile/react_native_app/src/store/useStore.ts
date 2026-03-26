@@ -5,6 +5,7 @@
  * user auth state, offline support, role-based routing,
  * and child health tracking (sleep, feeding).
  */
+import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import * as SecureStore from 'expo-secure-store';
@@ -14,12 +15,27 @@ import { saveScreeningResult, getScreeningHistory } from '../services/supabaseDb
 import type { Language } from '../i18n/translations';
 import type { UserRole } from '../services/supabaseAuth';
 
-// ── SecureStore adapter for zustand/persist ──────────────────────────────────
-const secureStorage = createJSONStorage(() => ({
-  getItem: (key: string) => SecureStore.getItemAsync(key),
-  setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
-  removeItem: (key: string) => SecureStore.deleteItemAsync(key),
-}));
+// ── Cross-platform storage adapter ───────────────────────────────────────────
+// SecureStore is native-only; fall back to localStorage on web.
+const secureStorage = createJSONStorage(() =>
+  Platform.OS === 'web'
+    ? {
+        getItem: (key: string) => Promise.resolve(localStorage.getItem(key)),
+        setItem: (key: string, value: string) => {
+          localStorage.setItem(key, value);
+          return Promise.resolve();
+        },
+        removeItem: (key: string) => {
+          localStorage.removeItem(key);
+          return Promise.resolve();
+        },
+      }
+    : {
+        getItem: (key: string) => SecureStore.getItemAsync(key),
+        setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
+        removeItem: (key: string) => SecureStore.deleteItemAsync(key),
+      },
+);
 
 // ── Screening History Record ──
 export interface ScreeningRecord {

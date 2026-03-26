@@ -1,8 +1,7 @@
 /**
- * app/auth.tsx — Sign In / Sign Up screen
- * Sign-up includes a role picker (Admin / CHW / Parent).
+ * app/auth.tsx — Sign In / Sign Up / Forgot Password / Reset Password screen
  */
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,15 +11,22 @@ import {
   Platform,
   TouchableOpacity,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../src/shared/theme';
 import { Button, InputField, Card, LoadingOverlay, ErrorMessage, Logo } from '../src/shared/components';
-import { signIn, signUpWithRole } from '../src/services/supabaseAuth';
+import {
+  signIn,
+  signUpWithRole,
+  sendPasswordReset,
+  updatePassword,
+} from '../src/services/supabaseAuth';
 import type { UserRole } from '../src/services/supabaseAuth';
 import { isSupabaseConfigured } from '../src/services/supabase';
 import { useStore } from '../src/store/useStore';
 import { useTranslation } from '../src/i18n';
+
+type AuthMode = 'signin' | 'signup' | 'forgot' | 'newpassword';
 
 // ── Role Picker ───────────────────────────────────────────────────────────────
 interface RoleOption {
@@ -104,10 +110,11 @@ const rpStyles = StyleSheet.create({
 // ── Auth Screen ───────────────────────────────────────────────────────────────
 export default function AuthScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ mode?: string }>();
   const { t } = useTranslation();
   const setUserId = useStore((s) => s.setUserId);
 
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [mode, setMode] = useState<AuthMode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -116,36 +123,74 @@ export default function AuthScreen() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const isSignUp = mode === 'signup';
+  // Deep-link: anemia-screening://reset-password?mode=newpassword
+  useEffect(() => {
+    if (params.mode === 'newpassword') {
+      setMode('newpassword');
+      setError(null);
+      setSuccessMessage(null);
+    }
+  }, [params.mode]);
 
+  const switchMode = (next: AuthMode) => {
+    setMode(next);
+    setError(null);
+    setSuccessMessage(null);
+  };
+
+  // ── Submit handlers ──────────────────────────────────────────────────────
   const handleSubmit = useCallback(async () => {
     setError(null);
     setSuccessMessage(null);
-
-    if (!email.trim() || !password.trim()) {
-      setError(t.auth.fillBoth);
-      return;
-    }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setError(t.auth.invalidEmail);
+
+    // Forgot password
+    if (mode === 'forgot') {
+      if (!email.trim()) { setError('Please enter your email address.'); return; }
+      if (!emailRegex.test(email.trim())) { setError(t.auth.invalidEmail); return; }
+      setIsLoading(true);
+      try {
+        await sendPasswordReset(email.trim());
+        setSuccessMessage('Password reset link sent — check your email.');
+        switchMode('signin');
+      } catch (err: any) {
+        setError(err.message || 'Failed to send reset email.');
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
-    if (isSignUp && password !== confirmPassword) {
-      setError(t.auth.passwordMismatch);
+
+    // New password (from deep link)
+    if (mode === 'newpassword') {
+      if (!password.trim()) { setError('Please enter a new password.'); return; }
+      if (password.length < 6) { setError(t.auth.minPassword); return; }
+      if (password !== confirmPassword) { setError(t.auth.passwordMismatch); return; }
+      setIsLoading(true);
+      try {
+        await updatePassword(password);
+        setSuccessMessage('Password updated successfully. Please sign in.');
+        switchMode('signin');
+      } catch (err: any) {
+        setError(err.message || 'Failed to update password.');
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
-    if (password.length < 6) {
-      setError(t.auth.minPassword);
-      return;
-    }
+
+    // Sign in / Sign up
+    if (!email.trim() || !password.trim()) { setError(t.auth.fillBoth); return; }
+    if (!emailRegex.test(email.trim())) { setError(t.auth.invalidEmail); return; }
+    if (mode === 'signup' && password !== confirmPassword) { setError(t.auth.passwordMismatch); return; }
+    if (password.length < 6) { setError(t.auth.minPassword); return; }
 
     setIsLoading(true);
     try {
-      if (isSignUp) {
+      if (mode === 'signup') {
         await signUpWithRole(email.trim(), password, selectedRole);
         setSuccessMessage(t.auth.confirmEmail);
-        setMode('signin');
+        switchMode('signin');
       } else {
         await signIn(email.trim(), password);
         // Auth state listener in _layout.tsx navigates based on role
@@ -155,19 +200,44 @@ export default function AuthScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [email, password, confirmPassword, isSignUp, selectedRole, t]);
+  }, [email, password, confirmPassword, mode, selectedRole, t]);
 
-  const toggleMode = () => {
-    setMode((prev) => (prev === 'signin' ? 'signup' : 'signin'));
-    setError(null);
-    setSuccessMessage(null);
-  };
-
-  // Guest mode — skip auth and go straight to the CHW tabs
+  // Guest mode
   const handleContinueAsGuest = () => {
     setUserId(null);
     router.replace('/');
   };
+
+  // ── Derived display ──────────────────────────────────────────────────────
+  const headerSubtitle = {
+    signin: t.auth.welcomeBack,
+    signup: t.auth.createAccount,
+    forgot: 'Reset your password',
+    newpassword: 'Set a new password',
+  }[mode];
+
+  const submitLabel = {
+    signin: t.auth.signIn,
+    signup: t.auth.createAccountBtn,
+    forgot: 'Send Reset Link',
+    newpassword: 'Update Password',
+  }[mode];
+
+  const submitIcon = {
+    signin: 'log-in-outline',
+    signup: 'person-add-outline',
+    forgot: 'mail-outline',
+    newpassword: 'lock-closed-outline',
+  }[mode] as keyof typeof Ionicons.glyphMap;
+
+  const loadingLabel = {
+    signin: t.auth.signingIn,
+    signup: t.auth.creatingAccount,
+    forgot: 'Sending…',
+    newpassword: 'Updating…',
+  }[mode];
+
+  const showGuestOption = mode === 'signin' || mode === 'signup';
 
   return (
     <View style={styles.wrapper}>
@@ -186,9 +256,7 @@ export default function AuthScreen() {
             <View style={styles.bubble1} />
             <View style={styles.bubble2} />
             <Logo size="lg" horizontal={false} showText />
-            <Text style={styles.subtitle}>
-              {isSignUp ? t.auth.createAccount : t.auth.welcomeBack}
-            </Text>
+            <Text style={styles.subtitle}>{headerSubtitle}</Text>
           </View>
 
           {/* ── Success banner ── */}
@@ -203,22 +271,30 @@ export default function AuthScreen() {
 
           {/* ── Form ── */}
           <Card style={styles.formCard}>
-            <InputField
-              label={t.auth.email}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@example.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <InputField
-              label={t.auth.password}
-              value={password}
-              onChangeText={setPassword}
-              placeholder="••••••••"
-              secureTextEntry
-            />
-            {isSignUp && (
+            {/* Email field — not shown on newpassword */}
+            {mode !== 'newpassword' && (
+              <InputField
+                label={t.auth.email}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="you@example.com"
+                keyboardType="email-address"
+              />
+            )}
+
+            {/* Password field — not shown on forgot */}
+            {mode !== 'forgot' && (
+              <InputField
+                label={mode === 'newpassword' ? 'New Password' : t.auth.password}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="••••••••"
+                secureTextEntry
+              />
+            )}
+
+            {/* Confirm password — signup and newpassword */}
+            {(mode === 'signup' || mode === 'newpassword') && (
               <InputField
                 label={t.auth.confirmPassword}
                 value={confirmPassword}
@@ -228,58 +304,83 @@ export default function AuthScreen() {
               />
             )}
 
-            {/* Role picker — only in signup */}
-            {isSignUp && (
+            {/* Role picker — only signup */}
+            {mode === 'signup' && (
               <RolePicker selected={selectedRole} onChange={setSelectedRole} />
+            )}
+
+            {/* Forgot password link — only signin */}
+            {mode === 'signin' && (
+              <TouchableOpacity
+                onPress={() => switchMode('forgot')}
+                style={styles.forgotBtn}
+              >
+                <Text style={styles.forgotText}>Forgot password?</Text>
+              </TouchableOpacity>
             )}
 
             {error && <ErrorMessage message={error} />}
 
             <View style={styles.submitWrap}>
               <Button
-                title={isSignUp ? t.auth.createAccountBtn : t.auth.signIn}
+                title={submitLabel}
                 onPress={handleSubmit}
                 variant="primary"
                 loading={isLoading}
                 icon={
                   !isLoading ? (
-                    <Ionicons
-                      name={isSignUp ? 'person-add-outline' : 'log-in-outline'}
-                      size={20}
-                      color={colors.white}
-                    />
+                    <Ionicons name={submitIcon} size={20} color={colors.white} />
                   ) : undefined
                 }
               />
             </View>
+
+            {/* Back to Sign In — forgot and newpassword */}
+            {(mode === 'forgot' || mode === 'newpassword') && (
+              <TouchableOpacity
+                onPress={() => switchMode('signin')}
+                style={styles.backBtn}
+              >
+                <Ionicons name="arrow-back-outline" size={16} color={colors.primaryDark} />
+                <Text style={styles.backText}>Back to Sign In</Text>
+              </TouchableOpacity>
+            )}
           </Card>
 
           {/* ── Toggle sign-in / sign-up ── */}
-          <View style={styles.toggleRow}>
-            <Text style={styles.toggleText}>
-              {isSignUp ? t.auth.hasAccount : t.auth.noAccount}
-            </Text>
-            <TouchableOpacity onPress={toggleMode} style={styles.toggleBtn}>
-              <Text style={styles.toggleLink}>
-                {isSignUp ? t.auth.signIn : t.auth.signUp}
+          {showGuestOption && (
+            <View style={styles.toggleRow}>
+              <Text style={styles.toggleText}>
+                {mode === 'signup' ? t.auth.hasAccount : t.auth.noAccount}
               </Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                onPress={() => switchMode(mode === 'signup' ? 'signin' : 'signup')}
+                style={styles.toggleBtn}
+              >
+                <Text style={styles.toggleLink}>
+                  {mode === 'signup' ? t.auth.signIn : t.auth.signUp}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-          {/* ── Divider ── */}
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
+          {/* ── Divider + Guest ── */}
+          {showGuestOption && (
+            <>
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or</Text>
+                <View style={styles.dividerLine} />
+              </View>
 
-          {/* ── Continue as Guest ── */}
-          <Button
-            title="Continue as Guest"
-            onPress={handleContinueAsGuest}
-            variant="secondary"
-            icon={<Ionicons name="person-outline" size={20} color={colors.text} />}
-          />
+              <Button
+                title="Continue as Guest"
+                onPress={handleContinueAsGuest}
+                variant="secondary"
+                icon={<Ionicons name="person-outline" size={20} color={colors.text} />}
+              />
+            </>
+          )}
 
           {!isSupabaseConfigured && (
             <Text style={styles.devNote}>
@@ -289,10 +390,7 @@ export default function AuthScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <LoadingOverlay
-        visible={isLoading}
-        message={isSignUp ? t.auth.creatingAccount : t.auth.signingIn}
-      />
+      <LoadingOverlay visible={isLoading} message={loadingLabel} />
     </View>
   );
 }
@@ -352,7 +450,17 @@ const styles = StyleSheet.create({
   },
   // ── Form ──
   formCard: { paddingVertical: spacing.lg, marginBottom: spacing.md },
+  forgotBtn: { alignSelf: 'flex-end', marginTop: -spacing.xs, marginBottom: spacing.sm },
+  forgotText: { fontSize: 13, color: colors.primaryDark, fontWeight: '600' },
   submitWrap: { marginTop: spacing.lg },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.md,
+    gap: spacing.xs,
+  },
+  backText: { fontSize: 14, color: colors.primaryDark, fontWeight: '600' },
   // ── Toggle ──
   toggleRow: {
     flexDirection: 'row',

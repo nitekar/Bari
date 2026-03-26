@@ -27,7 +27,8 @@
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.INTERNET"
+        "android.permission.INTERNET",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -49,6 +50,13 @@
           "cameraPermission": "Allow Anemia Screening to use the camera to capture conjunctiva images."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "35a56938-78a2-4c72-a2fb-a2af9840bcd2"
+      }
+    },
+    "owner": "niteka"
   }
 }

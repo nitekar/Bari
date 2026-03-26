@@ -24,6 +24,9 @@ mobile/react_native_app/.expo/
 .DS_Store
 Thumbs.db
 
+# Claude Code (local tooling — never commit)
+.claude/
+
 # IDE
 .vscode/
 .idea/

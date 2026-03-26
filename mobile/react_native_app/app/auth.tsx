@@ -1,5 +1,6 @@
 /**
  * app/auth.tsx — Sign In / Sign Up screen
+ * Sign-up includes a role picker (Admin / CHW / Parent).
  */
 import React, { useState, useCallback } from 'react';
 import {
@@ -15,11 +16,92 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../src/shared/theme';
 import { Button, InputField, Card, LoadingOverlay, ErrorMessage, Logo } from '../src/shared/components';
-import { signIn, signUp } from '../src/services/supabaseAuth';
+import { signIn, signUpWithRole } from '../src/services/supabaseAuth';
+import type { UserRole } from '../src/services/supabaseAuth';
 import { isSupabaseConfigured } from '../src/services/supabase';
 import { useStore } from '../src/store/useStore';
 import { useTranslation } from '../src/i18n';
 
+// ── Role Picker ───────────────────────────────────────────────────────────────
+interface RoleOption {
+  role: UserRole;
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  description: string;
+  color: string;
+}
+
+const ROLE_OPTIONS: RoleOption[] = [
+  { role: 'admin',  icon: 'shield-outline',  label: 'Admin',  description: 'System administrator', color: '#7E57C2' },
+  { role: 'chw',   icon: 'medkit-outline',  label: 'CHW',    description: 'Community Health Worker', color: colors.primary },
+  { role: 'parent',icon: 'heart-outline',   label: 'Parent', description: 'Parent or Caregiver',  color: colors.secondary },
+];
+
+function RolePicker({
+  selected,
+  onChange,
+}: {
+  selected: UserRole;
+  onChange: (r: UserRole) => void;
+}) {
+  return (
+    <View style={rpStyles.container}>
+      <Text style={rpStyles.label}>Select Role</Text>
+      <View style={rpStyles.row}>
+        {ROLE_OPTIONS.map((opt) => {
+          const isSelected = selected === opt.role;
+          return (
+            <TouchableOpacity
+              key={opt.role}
+              style={[
+                rpStyles.card,
+                isSelected
+                  ? { borderColor: colors.primaryDark, borderWidth: 2 }
+                  : { borderColor: colors.border, borderWidth: 1 },
+              ]}
+              onPress={() => onChange(opt.role)}
+              activeOpacity={0.7}
+            >
+              <View style={[rpStyles.iconBox, { backgroundColor: opt.color + '20' }]}>
+                <Ionicons name={opt.icon} size={22} color={opt.color} />
+              </View>
+              <Text style={[rpStyles.roleLabel, isSelected && { color: colors.primaryDark }]}>
+                {opt.label}
+              </Text>
+              <Text style={rpStyles.roleDesc}>{opt.description}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+const rpStyles = StyleSheet.create({
+  container: { marginBottom: spacing.md },
+  label: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: spacing.sm },
+  row: { flexDirection: 'row', gap: spacing.sm },
+  card: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xs,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surfaceElevated,
+  },
+  iconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
+  roleLabel: { fontSize: 13, fontWeight: '700', color: colors.text, marginBottom: 2 },
+  roleDesc: { fontSize: 10, color: colors.textSecondary, textAlign: 'center', lineHeight: 13 },
+});
+
+// ── Auth Screen ───────────────────────────────────────────────────────────────
 export default function AuthScreen() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -29,6 +111,7 @@ export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('chw');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -60,19 +143,19 @@ export default function AuthScreen() {
     setIsLoading(true);
     try {
       if (isSignUp) {
-        await signUp(email.trim(), password);
+        await signUpWithRole(email.trim(), password, selectedRole);
         setSuccessMessage(t.auth.confirmEmail);
         setMode('signin');
       } else {
         await signIn(email.trim(), password);
-        // Auth state listener in _layout.tsx navigates to '/'
+        // Auth state listener in _layout.tsx navigates based on role
       }
     } catch (err: any) {
       setError(err.message || t.auth.failed);
     } finally {
       setIsLoading(false);
     }
-  }, [email, password, confirmPassword, isSignUp, t]);
+  }, [email, password, confirmPassword, isSignUp, selectedRole, t]);
 
   const toggleMode = () => {
     setMode((prev) => (prev === 'signin' ? 'signup' : 'signin'));
@@ -80,9 +163,9 @@ export default function AuthScreen() {
     setSuccessMessage(null);
   };
 
-  // Guest mode — skip auth and go straight to the app
+  // Guest mode — skip auth and go straight to the CHW tabs
   const handleContinueAsGuest = () => {
-    setUserId(null);   // ensure no stale userId
+    setUserId(null);
     router.replace('/');
   };
 
@@ -145,6 +228,11 @@ export default function AuthScreen() {
               />
             )}
 
+            {/* Role picker — only in signup */}
+            {isSignUp && (
+              <RolePicker selected={selectedRole} onChange={setSelectedRole} />
+            )}
+
             {error && <ErrorMessage message={error} />}
 
             <View style={styles.submitWrap}>
@@ -195,7 +283,7 @@ export default function AuthScreen() {
 
           {!isSupabaseConfigured && (
             <Text style={styles.devNote}>
-              ⚙️  Supabase not configured — sign-in will fail. Use guest mode for testing.
+              Supabase not configured — sign-in will fail. Use guest mode for testing.
             </Text>
           )}
         </ScrollView>

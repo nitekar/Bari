@@ -2,7 +2,8 @@
  * useStore.ts — Zustand state management
  *
  * Expanded with Supabase persistence for screening history,
- * user auth state, and offline support.
+ * user auth state, offline support, role-based routing,
+ * and child health tracking (sleep, feeding).
  */
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -11,6 +12,7 @@ import type { PredictionResponse } from '../services/types';
 import type { QueuedRequest } from '../services/offlineQueue';
 import { saveScreeningResult, getScreeningHistory } from '../services/supabaseDb';
 import type { Language } from '../i18n/translations';
+import type { UserRole } from '../services/supabaseAuth';
 
 // ── SecureStore adapter for zustand/persist ──────────────────────────────────
 const secureStorage = createJSONStorage(() => ({
@@ -33,6 +35,26 @@ export interface ScreeningRecord {
   patientLocation?: string;
 }
 
+// ── Sleep Log ──
+export interface SleepLog {
+  id: string;
+  startTime: string;
+  endTime: string;
+  durationHours: number;
+  notes: string;
+  date: string;
+}
+
+// ── Feeding Log ──
+export interface FeedingLog {
+  id: string;
+  type: 'breastfeeding' | 'formula' | 'solid';
+  time: string;
+  quantityMl?: number;
+  notes: string;
+  date: string;
+}
+
 interface AppState {
   // ── App settings ──
   language: Language;
@@ -42,6 +64,12 @@ interface AppState {
 
   // ── Auth ──
   userId: string | null;
+  role: UserRole | null;
+
+  // ── Child profile ──
+  childName: string | null;
+  childAgeMonths: number | null;
+  childGender: 'male' | 'female' | null;
 
   // ── Data ──
   result: PredictionResponse | null;
@@ -49,6 +77,10 @@ interface AppState {
 
   // ── History ──
   history: ScreeningRecord[];
+
+  // ── Child health logs ──
+  sleepLogs: SleepLog[];
+  feedingLogs: FeedingLog[];
 
   // ── Offline ──
   offlineQueue: QueuedRequest[];
@@ -60,6 +92,8 @@ interface AppState {
 
   // ── Actions ──
   setUserId: (id: string | null) => void;
+  setRole: (role: UserRole | null) => void;
+  setChildProfile: (name: string | null, ageMonths: number | null, gender: 'male' | 'female' | null) => void;
   setResult: (data: PredictionResponse) => void;
   setImageUri: (uri: string | null) => void;
   setLoading: (loading: boolean) => void;
@@ -67,6 +101,8 @@ interface AppState {
   addToHistory: (record: ScreeningRecord) => void;
   loadHistoryFromSupabase: (userId: string) => Promise<void>;
   clearHistory: () => void;
+  addSleepLog: (log: SleepLog) => void;
+  addFeedingLog: (log: FeedingLog) => void;
   addToQueue: (request: QueuedRequest) => void;
   removeFromQueue: (id: string) => void;
   setLastSyncedAt: (date: Date) => void;
@@ -77,9 +113,15 @@ const initialState = {
   language: 'en' as Language,
   hasSeenOnboarding: false,
   userId: null as string | null,
+  role: null as UserRole | null,
+  childName: null as string | null,
+  childAgeMonths: null as number | null,
+  childGender: null as 'male' | 'female' | null,
   result: null,
   imageUri: null,
   history: [] as ScreeningRecord[],
+  sleepLogs: [] as SleepLog[],
+  feedingLogs: [] as FeedingLog[],
   offlineQueue: [] as QueuedRequest[],
   lastSyncedAt: null as Date | null,
   isLoading: false,
@@ -95,6 +137,10 @@ export const useStore = create<AppState>()(
   setHasSeenOnboarding: (seen) => set({ hasSeenOnboarding: seen }),
 
   setUserId: (id) => set({ userId: id }),
+  setRole: (role) => set({ role }),
+
+  setChildProfile: (name, ageMonths, gender) =>
+    set({ childName: name, childAgeMonths: ageMonths, childGender: gender }),
 
   setResult: (data) => set({ result: data, error: null }),
   setImageUri: (uri) => set({ imageUri: uri }),
@@ -147,6 +193,16 @@ export const useStore = create<AppState>()(
 
   clearHistory: () => set({ history: [] }),
 
+  addSleepLog: (log) =>
+    set((state) => ({
+      sleepLogs: [log, ...state.sleepLogs].slice(0, 200),
+    })),
+
+  addFeedingLog: (log) =>
+    set((state) => ({
+      feedingLogs: [log, ...state.feedingLogs].slice(0, 200),
+    })),
+
   addToQueue: (request) =>
     set((state) => ({
       offlineQueue: [...state.offlineQueue, request],
@@ -168,10 +224,17 @@ export const useStore = create<AppState>()(
     {
       name: 'bari-app-storage',
       storage: secureStorage,
-      // Only persist user preferences — not ephemeral runtime state
       partialize: (state) => ({
         language: state.language,
         hasSeenOnboarding: state.hasSeenOnboarding,
+        role: state.role,
+        childName: state.childName,
+        childAgeMonths: state.childAgeMonths,
+        childGender: state.childGender,
+        // Persist so past results are viewable offline and queue survives restarts
+        history: state.history,
+        offlineQueue: state.offlineQueue,
+        lastSyncedAt: state.lastSyncedAt,
       }),
     },
   ),

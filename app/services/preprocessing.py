@@ -1,6 +1,6 @@
 """
 services/preprocessing.py
-Unified preprocessing façade consumed by inference endpoints.
+Preprocessing façade consumed by inference endpoints.
 """
 from __future__ import annotations
 
@@ -9,42 +9,46 @@ from typing import Any
 import numpy as np
 from PIL import Image
 
-from app.utils.image_utils import preprocess_image
-from app.utils.tabular_utils import build_and_scale
+from app.utils.image_utils import extract_lab_features, preprocess_image
+from app.utils.tabular_utils import build_nh_vector, build_wh_vector, scale
 
 
-def preprocess_tabular(
-    age: float,
-    gender: int,
-    scaler_with: Any,
-    scaler_no:   Any,
-    hb_level: float | None = None,
-) -> tuple[np.ndarray, bool]:
+def preprocess_image_bytes(raw_bytes: bytes) -> tuple[np.ndarray, Image.Image]:
     """
-    Preprocess tabular inputs.
+    Decode bytes → PIL image → CLAHE → (1, 224, 224, 3) float32 tensor.
 
-    Applies StandardScaler fitted during training.
-    Gender is encoded as a binary float (Female=1, Male=0) — one-hot for
-    a 2-class variable reduces to a single binary feature.
-
-    Returns
-    -------
-    (scaled_array shape (1, n_features), use_hb flag)
-    """
-    return build_and_scale(
-        age=age,
-        gender=gender,
-        scaler_with=scaler_with,
-        scaler_no=scaler_no,
-        hb_level=hb_level,
-    )
-
-
-def preprocess_image_bytes(raw_bytes: bytes) -> np.ndarray:
-    """
-    Decode bytes → PIL.Image → central crop (70 %) → (1, 224, 224, 3) float32
-    array normalised to [-1, 1] (MobileNetV3Small preprocess_input).
+    Returns both the model-ready array and the PIL image (for LAB extraction).
     """
     from app.utils.image_utils import load_pil_image
     pil = load_pil_image(raw_bytes)
-    return preprocess_image(pil)
+    return preprocess_image(pil), pil
+
+
+def build_nh_scaled(
+    pil_image: Image.Image,
+    age:       float,
+    gender:    int,
+    scaler_nh: Any,
+) -> np.ndarray:
+    """
+    Extract LAB features + build + scale FEAT_NO_HB vector (16 features).
+    Used as input to the fusion model tabular branch.
+    """
+    lab_feats = extract_lab_features(pil_image)
+    raw       = build_nh_vector(lab_feats, age, gender)
+    return scale(raw, scaler_nh), lab_feats
+
+
+def build_wh_scaled(
+    lab_feats:    dict,
+    age:          float,
+    gender:       int,
+    hb_estimated: float,
+    scaler_wh:    Any,
+) -> np.ndarray:
+    """
+    Build + scale FEAT_WITH_HB vector (17 features) using estimated Hb.
+    Used as input to the RF With HB classifier.
+    """
+    raw = build_wh_vector(lab_feats, age, gender, hb_estimated)
+    return scale(raw, scaler_wh)

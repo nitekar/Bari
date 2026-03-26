@@ -9,7 +9,7 @@ from typing import Dict, Any
 
 
 # ── Class index → severity label ──────────────────────────────────────────────
-CLASS_NAMES: list[str] = ["Non-Anemic", "Mild", "Moderate", "Severe"]
+CLASS_NAMES: list[str] = ["Normal", "Mild", "Moderate", "Severe"]
 
 # ── Short advice (used in compact responses) ──────────────────────────────────
 nutrition_map: Dict[int, str] = {
@@ -22,7 +22,7 @@ nutrition_map: Dict[int, str] = {
 # ── Full guidance (used in detailed responses) ────────────────────────────────
 _FULL_GUIDE: Dict[int, Dict[str, Any]] = {
     0: {
-        "label": "Non-Anemic",
+        "label": "Normal",
         "urgency": "Normal",
         "hb_range": "≥ 12 g/dL (F) | ≥ 13 g/dL (M)",
         "advice": "Maintain a balanced diet with iron-rich foods.",

@@ -1,7 +1,7 @@
 """
 services/inference.py
 Core inference engine — all model calls live here.
-Stateless: models are injected as arguments (loaded once in main.py lifespan).
+Stateless: models/scalers are injected as arguments (loaded once at startup).
 """
 from __future__ import annotations
 
@@ -12,204 +12,153 @@ import numpy as np
 
 logger = logging.getLogger("anemia-api.inference")
 
-# ── Constants ─────────────────────────────────────────────────────────────────
-CLASS_NAMES: list[str] = ["Non-Anemic", "Mild", "Moderate", "Severe"]
-
-class_map: dict[int, str] = {
-    0: "Non-Anemic",
-    1: "Mild",
-    2: "Moderate",
-    3: "Severe",
-}
+# ── Class labels — must match notebook CLASS_NAMES ────────────────────────────
+CLASS_NAMES:        list[str] = ["Normal", "Mild", "Moderate", "Severe"]
+VISUAL_CLASS_NAMES: list[str] = ["Non-Anemic", "Anemic"]
 
 
-# ── Tabular ───────────────────────────────────────────────────────────────────
-def predict_tabular(
-    scaled_features: np.ndarray,
-    model_with_hb: Any,
-    model_no_hb: Any,
-    use_hb: bool,
-) -> tuple[int, float, np.ndarray]:
+# ── WHO severity from Hb ──────────────────────────────────────────────────────
+def anemia_label(hb: float, age_months: float, gender: str = "") -> str:
     """
-    Run sklearn RandomForest inference.
-
-    Parameters
-    ----------
-    scaled_features : (1, n_features) float32 array
-    model_with_hb   : fitted sklearn model (uses HB_LEVEL)
-    model_no_hb     : fitted sklearn model (no HB_LEVEL)
-    use_hb          : select which model to call
-
-    Returns
-    -------
-    (pred_class_idx, confidence, probabilities array)
+    WHO age/gender-aware severity label from Hb (g/dL).
+    Matches anemia_label() in the notebook config cell.
     """
-    model = model_with_hb if use_hb else model_no_hb
-    probs = model.predict_proba(scaled_features)[0]     # (n_classes,)
-    pred  = int(np.argmax(probs))
-    conf  = float(probs[pred])
-    return pred, conf, probs
+    if 6 <= age_months < 24:
+        if   hb >= 10.5:           return "Normal"
+        elif 9.5  <= hb < 10.5:    return "Mild"
+        elif 7.0  <= hb <  9.5:    return "Moderate"
+        else:                       return "Severe"
+    elif 24 <= age_months <= 60:
+        if   hb >= 11.0:           return "Normal"
+        elif 10.0 <= hb < 11.0:    return "Mild"
+        elif 7.0  <= hb < 10.0:    return "Moderate"
+        else:                       return "Severe"
+    # Age outside 6-60 months: fall back to adult WHO threshold
+    return "Normal" if hb >= 12.0 else ("Mild" if hb >= 11.0 else
+           "Moderate" if hb >= 8.0 else "Severe")
 
 
-# ── TFLite helpers ────────────────────────────────────────────────────────────
-def _run_tflite_single(interpreter: Any, input_array: np.ndarray) -> np.ndarray:
-    """
-    Run a single-input TFLite model.
-
-    Parameters
-    ----------
-    interpreter  : tf.lite.Interpreter (already allocated)
-    input_array  : (1, H, W, C) or (1, n_feat) float32
-
-    Returns
-    -------
-    probs : (n_classes,) float32
-    """
-    in_det  = interpreter.get_input_details()
-    out_det = interpreter.get_output_details()
-
-    interpreter.set_tensor(in_det[0]["index"], input_array.astype(in_det[0]["dtype"]))
-    interpreter.invoke()
-    return interpreter.get_tensor(out_det[0]["index"])[0]
-
-
-def _run_tflite_multi(
+# ── TFLite runner ─────────────────────────────────────────────────────────────
+def _run_tflite(
     interpreter: Any,
-    img_array: np.ndarray,
-    tab_array: np.ndarray,
-) -> np.ndarray:
+    inputs: dict[str, np.ndarray],
+) -> dict[str, np.ndarray]:
     """
-    Run a dual-input TFLite model (image + tabular).
+    Generic TFLite runner for single or dual-input / dual-output models.
 
-    The function auto-detects which input tensor corresponds to the image
-    and which to tabular features by comparing tensor shapes.
+    Parameters
+    ----------
+    interpreter : tf.lite.Interpreter (already allocated)
+    inputs      : dict of {partial_name: array}  e.g. {"image": img_arr}
+                  Matched to tensor slots by shape: 4-D → image, 2-D → tabular.
 
     Returns
     -------
-    probs : (n_classes,) float32
+    dict {output_name: np.ndarray}
     """
     in_dets  = interpreter.get_input_details()
     out_dets = interpreter.get_output_details()
 
     for det in in_dets:
-        shape = det["shape"]
         dtype = det["dtype"]
-        if len(shape) == 4:                 # (1, H, W, C) → image
-            interpreter.set_tensor(det["index"], img_array.astype(dtype))
-        else:                               # (1, n_feat)  → tabular
-            interpreter.set_tensor(det["index"], tab_array.astype(dtype))
+        shape = det["shape"]
+        # Match by dimensionality: 4-D tensor is image, 2-D is tabular
+        if len(shape) == 4:
+            arr = inputs.get("image") or next(v for v in inputs.values() if v.ndim == 4)
+        else:
+            arr = inputs.get("tab") or next(v for v in inputs.values() if v.ndim == 2)
+        interpreter.set_tensor(det["index"], arr.astype(dtype))
 
     interpreter.invoke()
-    return interpreter.get_tensor(out_dets[0]["index"])[0]
+    return {det["name"]: interpreter.get_tensor(det["index"]) for det in out_dets}
 
 
-# ── Image ─────────────────────────────────────────────────────────────────────
-def predict_image(
+def _get_output(tensors: dict[str, np.ndarray], n_classes: int) -> np.ndarray:
+    """Pick the output tensor with shape matching n_classes."""
+    for arr in tensors.values():
+        if arr.ndim >= 1 and arr.flatten().shape[0] == n_classes:
+            return arr.flatten()
+    # Fallback: first tensor
+    return next(iter(tensors.values())).flatten()
+
+
+def _get_hb_output(tensors: dict[str, np.ndarray]) -> float | None:
+    """Pick the scalar Hb output tensor (shape (1,1) or (1,))."""
+    for arr in tensors.values():
+        if arr.size == 1:
+            return float(arr.flatten()[0])
+    return None
+
+
+# ── Visual model inference ────────────────────────────────────────────────────
+def predict_visual(
     img_array: np.ndarray,
-    visual_interpreter: Any,
-) -> tuple[int, float, np.ndarray]:
+    interpreter: Any,
+    hb_mean: float,
+    hb_std:  float,
+) -> tuple[int, float, np.ndarray, float]:
     """
-    TFLite visual model inference.
-
-    Parameters
-    ----------
-    img_array          : (1, 160, 160, 3) float32
-    visual_interpreter : tf.lite.Interpreter (allocated)
+    Run the visual TFLite model (binary cls + Hb regression).
 
     Returns
     -------
-    (pred_class_idx, confidence, probabilities)
+    (binary_pred_idx, confidence, binary_probs, hb_estimated_gdl)
     """
-    probs = _run_tflite_single(visual_interpreter, img_array)
+    tensors    = _run_tflite(interpreter, {"image": img_array})
+    cls_probs  = _get_output(tensors, n_classes=2)
+    hb_norm    = _get_hb_output(tensors)
+    hb_gdl     = (hb_norm * hb_std + hb_mean) if hb_norm is not None else 0.0
+    pred       = int(np.argmax(cls_probs))
+    conf       = float(cls_probs[pred])
+    return pred, conf, cls_probs, hb_gdl
+
+
+# ── Fusion model inference ────────────────────────────────────────────────────
+def predict_fusion(
+    img_array:  np.ndarray,
+    tab_array:  np.ndarray,
+    interpreter: Any,
+    hb_mean:    float,
+    hb_std:     float,
+) -> tuple[int, float, np.ndarray, float]:
+    """
+    Run the fusion TFLite model (image + 16 LAB features → severity + Hb).
+
+    Returns
+    -------
+    (severity_pred_idx, confidence, severity_probs, hb_estimated_gdl)
+    """
+    tensors    = _run_tflite(interpreter, {"image": img_array, "tab": tab_array})
+    cls_probs  = _get_output(tensors, n_classes=4)
+    hb_norm    = _get_hb_output(tensors)
+    hb_gdl     = (hb_norm * hb_std + hb_mean) if hb_norm is not None else 0.0
+    pred       = int(np.argmax(cls_probs))
+    conf       = float(cls_probs[pred])
+    return pred, conf, cls_probs, hb_gdl
+
+
+# ── Visual → RF pipeline ──────────────────────────────────────────────────────
+def predict_rf(
+    scaled_wh_features: np.ndarray,
+    rf_model:           Any,
+) -> tuple[int, float, np.ndarray]:
+    """
+    Run RF With HB classifier on pre-scaled FEAT_WITH_HB features.
+
+    Returns
+    -------
+    (severity_pred_idx, confidence, severity_probs)
+    """
+    probs = rf_model.predict_proba(scaled_wh_features)[0]
     pred  = int(np.argmax(probs))
     conf  = float(probs[pred])
     return pred, conf, probs
 
 
-# ── Multimodal ────────────────────────────────────────────────────────────────
-def predict_multimodal(
-    img_array:           np.ndarray,
-    tab_array:           np.ndarray,
-    mm_interpreter_wh:   Any,
-    mm_interpreter_nonh: Any,
-    use_hb:              bool,
-) -> tuple[int, float, np.ndarray]:
-    """
-    TFLite multimodal fusion model inference.
-
-    Selects the correct interpreter based on whether HB_LEVEL was provided.
-
-    Parameters
-    ----------
-    img_array            : (1, 160, 160, 3) float32
-    tab_array            : (1, 3) or (1, 2) float32
-    mm_interpreter_wh    : Interpreter for fusion_with_hb  (3 tab features)
-    mm_interpreter_nonh  : Interpreter for fusion_no_hb    (2 tab features)
-    use_hb               : True → use mm_interpreter_wh
-
-    Returns
-    -------
-    (pred_class_idx, confidence, probabilities)
-    """
-    interp = mm_interpreter_wh if use_hb else mm_interpreter_nonh
-    probs  = _run_tflite_multi(interp, img_array, tab_array)
-    pred   = int(np.argmax(probs))
-    conf   = float(probs[pred])
-    return pred, conf, probs
-
-
-# ── SHAP explainability ───────────────────────────────────────────────────────
-def explain_tabular(
-    scaled_features: np.ndarray,
-    model_with_hb:   Any,
-    model_no_hb:     Any,
-    use_hb:          bool,
-    feature_names:   list[str],
-) -> dict[str, float]:
-    """
-    Compute SHAP feature importances for a single tabular prediction.
-
-    Returns
-    -------
-    Dict mapping feature name → mean absolute SHAP contribution
-    across all classes.
-    """
-    try:
-        import shap
-    except ImportError as exc:
-        raise ImportError(
-            "shap is required for /explain/tabular. "
-            "Install with: pip install shap"
-        ) from exc
-
-    model    = model_with_hb if use_hb else model_no_hb
-    explainer = shap.TreeExplainer(model)
-    shap_vals = explainer.shap_values(scaled_features)  # list[n_classes]
-
-    # Mean |SHAP| across classes → single importance score per feature
-    if isinstance(shap_vals, list):
-        mean_abs = np.mean([np.abs(sv) for sv in shap_vals], axis=0)[0]
-    else:
-        mean_abs = np.abs(shap_vals)[0]
-
-    return {name: round(float(val), 6) for name, val in zip(feature_names, mean_abs)}
-
-
-# ── Shared output builders ────────────────────────────────────────────────────
+# ── Output builders ───────────────────────────────────────────────────────────
 def build_probabilities_dict(probs: np.ndarray) -> dict[str, float]:
-    """Map 4-class names to rounded probability values."""
-    return {
-        name: round(float(p), 6)
-        for name, p in zip(CLASS_NAMES, probs)
-    }
-
-
-VISUAL_CLASS_NAMES: list[str] = ["Non-Anemic", "Anemic"]
+    return {name: round(float(p), 6) for name, p in zip(CLASS_NAMES, probs)}
 
 
 def build_visual_probabilities_dict(probs: np.ndarray) -> dict[str, float]:
-    """Map binary visual class names to rounded probability values."""
-    return {
-        name: round(float(p), 6)
-        for name, p in zip(VISUAL_CLASS_NAMES, probs)
-    }
+    return {name: round(float(p), 6) for name, p in zip(VISUAL_CLASS_NAMES, probs)}

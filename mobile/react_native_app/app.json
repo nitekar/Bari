@@ -12,16 +12,22 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.bari.anemiscreening",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "We need access to your photo library to select conjunctiva images for anemia screening."
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to select conjunctiva images for anemia screening.",
+        "NSCameraUsageDescription": "We need camera access to capture conjunctiva images for anemia screening."
       }
     },
     "android": {
+      "package": "com.bari.anemiscreening",
       "adaptiveIcon": {
         "backgroundColor": "#FAFAFA"
       },
       "permissions": [
-        "READ_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET"
       ]
     },
     "web": {
@@ -35,7 +41,14 @@
     ],
     "plugins": [
       "expo-asset",
-      "expo-router"
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Anemia Screening to access your photos for conjunctiva image analysis.",
+          "cameraPermission": "Allow Anemia Screening to use the camera to capture conjunctiva images."
+        }
+      ]
     ]
   }
 }

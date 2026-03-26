@@ -10,6 +10,29 @@ import api from './api';
 import { endpoints } from './endpoints';
 import type { PredictionResponse, TabularRequest, MultimodalFields } from './types';
 import { uploadConjunctivaImage } from './supabaseStorage';
+import { createQueuedRequest } from './offlineQueue';
+import { useStore } from '../store/useStore';
+
+/** Thrown when the device is offline and the request has been queued. */
+export class OfflineError extends Error {
+  constructor() {
+    super('You are offline. The request has been queued and will sync when you reconnect.');
+    this.name = 'OfflineError';
+  }
+}
+
+function isNetworkError(err: unknown): boolean {
+  if (err instanceof Error) {
+    const msg = err.message.toLowerCase();
+    return (
+      msg.includes('network') ||
+      msg.includes('connection') ||
+      msg.includes('reach the server') ||
+      msg.includes('timeout')
+    );
+  }
+  return false;
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -90,8 +113,18 @@ export async function predictTabular(
     body.hb_level = data.hb_level;
   }
 
-  const response = await api.post<PredictionResponse>(endpoints.tabular, body);
-  return { ...response.data, imageStoragePath: null };
+  try {
+    const response = await api.post<PredictionResponse>(endpoints.tabular, body);
+    return { ...response.data, imageStoragePath: null };
+  } catch (err) {
+    if (isNetworkError(err)) {
+      useStore.getState().addToQueue(
+        createQueuedRequest(endpoints.tabular, 'POST', body, 'application/json'),
+      );
+      throw new OfflineError();
+    }
+    throw err;
+  }
 }
 
 /**
@@ -105,15 +138,23 @@ export async function predictImage(
 ): Promise<ScreeningResult> {
   const compressed = await compressImage(imageUri);
 
-  // Fire ML prediction and Supabase upload in parallel
-  const [response, storagePath] = await Promise.all([
-    api.post<PredictionResponse>(endpoints.image, buildImageFormData(compressed), {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-    tryUploadImage(userId ?? null, compressed),
-  ]);
-
-  return { ...response.data, imageStoragePath: storagePath };
+  try {
+    const [response, storagePath] = await Promise.all([
+      api.post<PredictionResponse>(endpoints.image, buildImageFormData(compressed), {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+      tryUploadImage(userId ?? null, compressed),
+    ]);
+    return { ...response.data, imageStoragePath: storagePath };
+  } catch (err) {
+    if (isNetworkError(err)) {
+      useStore.getState().addToQueue(
+        createQueuedRequest(endpoints.image, 'POST', {}, 'multipart/form-data', compressed),
+      );
+      throw new OfflineError();
+    }
+    throw err;
+  }
 }
 
 /**
@@ -137,13 +178,21 @@ export async function predictMultimodal(
 
   const formData = buildImageFormData(compressed, extra);
 
-  // Fire ML prediction and Supabase upload in parallel
-  const [response, storagePath] = await Promise.all([
-    api.post<PredictionResponse>(endpoints.multimodal, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-    tryUploadImage(userId ?? null, compressed),
-  ]);
-
-  return { ...response.data, imageStoragePath: storagePath };
+  try {
+    const [response, storagePath] = await Promise.all([
+      api.post<PredictionResponse>(endpoints.multimodal, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+      tryUploadImage(userId ?? null, compressed),
+    ]);
+    return { ...response.data, imageStoragePath: storagePath };
+  } catch (err) {
+    if (isNetworkError(err)) {
+      useStore.getState().addToQueue(
+        createQueuedRequest(endpoints.multimodal, 'POST', extra, 'multipart/form-data', compressed),
+      );
+      throw new OfflineError();
+    }
+    throw err;
+  }
 }

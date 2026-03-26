@@ -4,16 +4,23 @@
  * Handles:
  *  - Onboarding redirect (first-time users)
  *  - Supabase auth guard (when configured)
- *  - Registers all routes: (tabs) group + stack screens
+ *  - Role-based routing: admin → /(admin), chw → /(chw), parent → /(parent)
+ *  - EMAIL_CONFIRMED event alert
+ *  - Deep link token exchange for email confirmation
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 import type { Session } from '@supabase/supabase-js';
 import { colors } from '../src/shared/theme';
-import { onAuthStateChanged, getSession } from '../src/services/supabaseAuth';
+import { onAuthStateChanged, getSession, getUserProfile } from '../src/services/supabaseAuth';
+import type { UserRole } from '../src/services/supabaseAuth';
+import { useNetworkStatus } from '../src/shared/hooks/useNetworkStatus';
+import OfflineIndicator from '../src/shared/components/OfflineIndicator';
+import { processSyncQueue } from '../src/services/syncService';
 import { isSupabaseConfigured, supabase } from '../src/services/supabase';
 import { useStore } from '../src/store/useStore';
 import { useTranslation } from '../src/i18n';
@@ -21,24 +28,32 @@ import { useTranslation } from '../src/i18n';
 export default function RootLayout() {
   const { t } = useTranslation();
   const [session, setSession] = useState<Session | null>(null);
+  const [role, setRoleLocal] = useState<UserRole | null>(null);
   const [isReady, setIsReady] = useState(false);
   const router = useRouter();
   const segments = useSegments();
   const setUserId = useStore((s) => s.setUserId);
+  const setRole = useStore((s) => s.setRole);
   const loadHistoryFromSupabase = useStore((s) => s.loadHistoryFromSupabase);
   const hasSeenOnboarding = useStore((s) => s.hasSeenOnboarding);
+  const offlineQueue = useStore((s) => s.offlineQueue);
+  const lastSyncedAt = useStore((s) => s.lastSyncedAt);
+
+  const { isConnected } = useNetworkStatus();
+  const prevConnected = useRef(isConnected);
 
   // ── Bootstrap: check existing session ──────────────────────────────────────
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setIsReady(true);
-      return;
-    }
-    getSession().then((s) => {
+    if (!isSupabaseConfigured) { setIsReady(true); return; }
+    getSession().then(async (s) => {
       setSession(s);
       if (s?.user) {
         setUserId(s.user.id);
         loadHistoryFromSupabase(s.user.id);
+        const profile = await getUserProfile();
+        const r = profile?.role ?? 'chw';
+        setRoleLocal(r);
+        setRole(r);
       }
       setIsReady(true);
     });
@@ -47,13 +62,22 @@ export default function RootLayout() {
   // ── Listen for auth state changes ──────────────────────────────────────────
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    const unsubscribe = onAuthStateChanged((_event, s) => {
+    const unsubscribe = onAuthStateChanged(async (event, s) => {
+      if ((event as string) === 'EMAIL_CONFIRMED') {
+        Alert.alert('Email Confirmed', 'Your email has been confirmed. You can now sign in.');
+      }
       setSession(s);
       if (s?.user) {
         setUserId(s.user.id);
         loadHistoryFromSupabase(s.user.id);
+        const profile = await getUserProfile();
+        const r = profile?.role ?? 'chw';
+        setRoleLocal(r);
+        setRole(r);
       } else {
         setUserId(null);
+        setRoleLocal(null);
+        setRole(null);
       }
     });
     return unsubscribe;
@@ -62,9 +86,7 @@ export default function RootLayout() {
   // ── Deep link handler: email confirmation ──────────────────────────────────
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-
     const handleUrl = async (url: string) => {
-      // Supabase appends tokens in the URL fragment: anemia-screening://#access_token=...
       const fragment = url.split('#')[1] ?? '';
       const params = new URLSearchParams(fragment);
       const access_token = params.get('access_token');
@@ -73,73 +95,81 @@ export default function RootLayout() {
         await supabase.auth.setSession({ access_token, refresh_token });
       }
     };
-
-    // App opened from a cold start via deep link
     Linking.getInitialURL().then((url) => { if (url) handleUrl(url); });
-
-    // App already open and receives a deep link
     const sub = Linking.addEventListener('url', ({ url }) => handleUrl(url));
     return () => sub.remove();
   }, []);
 
-  // ── Route protection ───────────────────────────────────────────────────────
+  // ── Sync offline queue when connectivity is restored ──────────────────────
+  useEffect(() => {
+    if (isConnected && !prevConnected.current) {
+      processSyncQueue();
+    }
+    prevConnected.current = isConnected;
+  }, [isConnected]);
+
+  // ── Role-based route protection ────────────────────────────────────────────
   useEffect(() => {
     if (!isReady) return;
+    const inTabs     = segments[0] === '(tabs)';
+    const onAuth     = segments[0] === 'auth';
+    const onBoarding = segments[0] === 'onboarding';
 
-    const onOnboarding = segments[0] === 'onboarding';
-    const onAuthScreen = segments[0] === 'auth';
+    if (!hasSeenOnboarding && !onBoarding) { router.replace('/onboarding'); return; }
 
-    // 1. Onboarding gate
-    if (!hasSeenOnboarding && !onOnboarding) {
-      router.replace('/onboarding');
-      return;
-    }
-
-    // 2. Auth gate — always shown after onboarding; auth actions only work
-    //    once real Supabase credentials are configured.
     if (hasSeenOnboarding) {
-      if (!session && !onAuthScreen && !onOnboarding) {
-        router.replace('/auth');
-      } else if (session && onAuthScreen) {
-        router.replace('/');
+      if (!session && !onAuth && !onBoarding) { router.replace('/auth'); return; }
+      if (session && role) {
+        if (onAuth) {
+          if (role === 'admin')  { router.replace('/(admin)'); return; }
+          if (role === 'parent') { router.replace('/(parent)'); return; }
+          router.replace('/(chw)'); return;
+        }
+        // Redirect away from old (tabs) if not CHW
+        if (inTabs && role !== 'chw') {
+          if (role === 'admin')  { router.replace('/(admin)'); return; }
+          router.replace('/(parent)');
+        }
       }
     }
-  }, [session, segments, isReady, hasSeenOnboarding]);
+  }, [session, role, segments, isReady, hasSeenOnboarding]);
 
   if (!isReady) return null;
 
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" backgroundColor={colors.background} />
+      <View style={{ flex: 1 }}>
+        <OfflineIndicator
+          isConnected={isConnected}
+          queueCount={offlineQueue.length}
+          lastSyncedAt={lastSyncedAt ? new Date(lastSyncedAt) : null}
+        />
       <Stack
         screenOptions={{
-          headerStyle: {
-            backgroundColor: colors.surface,
-          },
+          headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.primaryDark,
-          headerTitleStyle: {
-            fontWeight: '700',
-            fontSize: 17,
-            color: colors.text,
-          },
+          headerTitleStyle: { fontWeight: '700', fontSize: 17, color: colors.text },
           headerShadowVisible: false,
           contentStyle: { backgroundColor: colors.background },
           animation: 'slide_from_right',
         }}
       >
-        {/* Full-screen flows — no header */}
-        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-        <Stack.Screen name="auth"       options={{ headerShown: false }} />
-
-        {/* Tab group — tab bar is its own chrome */}
-        <Stack.Screen name="(tabs)"     options={{ headerShown: false }} />
-
-        {/* Stack screens pushed on top of tabs */}
+        <Stack.Screen name="onboarding"    options={{ headerShown: false }} />
+        <Stack.Screen name="auth"          options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)"        options={{ headerShown: false }} />
+        <Stack.Screen name="(chw)"         options={{ headerShown: false }} />
+        <Stack.Screen name="(admin)"       options={{ headerShown: false }} />
+        <Stack.Screen name="(parent)"      options={{ headerShown: false }} />
         <Stack.Screen name="image-capture" options={{ title: t.tabs.screening }} />
         <Stack.Screen name="result"        options={{ title: 'Results' }} />
         <Stack.Screen name="referral"      options={{ title: t.referral.referralLetter }} />
         <Stack.Screen name="settings"      options={{ title: t.settings.title }} />
+        <Stack.Screen name="parent-sleep"       options={{ title: 'Sleep Log' }} />
+        <Stack.Screen name="parent-feeding"     options={{ title: 'Feeding Log' }} />
+        <Stack.Screen name="parent-development" options={{ title: 'Development Stage' }} />
       </Stack>
+      </View>
     </SafeAreaProvider>
   );
 }

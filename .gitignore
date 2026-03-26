@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Data (large — do not commit)
+data/
+
+# Node / Expo
+node_modules/
+.expo/
+dist/
+mobile/react_native_app/node_modules/
+mobile/react_native_app/.expo/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build artifacts
+build/
+*.apk
+*.ipa
+*.aab

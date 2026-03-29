@@ -7,9 +7,11 @@
  *  - Role-based routing: admin → /(admin), chw → /(chw), parent → /(parent)
  *  - EMAIL_CONFIRMED event alert
  *  - Deep link token exchange for email confirmation
+ *  - ErrorBoundary for unhandled render errors
+ *  - Branded loading splash
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, View } from 'react-native';
+import { Alert, View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -19,11 +21,53 @@ import { colors } from '../src/shared/theme';
 import { onAuthStateChanged, getSession, getUserProfile } from '../src/services/supabaseAuth';
 import type { UserRole } from '../src/services/supabaseAuth';
 import { useNetworkStatus } from '../src/shared/hooks/useNetworkStatus';
+import { ErrorBoundary as AppErrorBoundary } from '../src/shared/components';
 import OfflineIndicator from '../src/shared/components/OfflineIndicator';
 import { processSyncQueue } from '../src/services/syncService';
 import { isSupabaseConfigured, supabase } from '../src/services/supabase';
 import { useStore } from '../src/store/useStore';
 import { useTranslation } from '../src/i18n';
+
+// ── Expo Router ErrorBoundary export ─────────────────────────────────────────
+export { default as ErrorBoundary } from '../src/shared/components/ErrorBoundary';
+
+// ── Branded loading splash ───────────────────────────────────────────────────
+function LoadingSplash() {
+  return (
+    <View style={splashStyles.container}>
+      <Text style={splashStyles.logo}>🩺</Text>
+      <Text style={splashStyles.title}>Bari Anemia</Text>
+      <Text style={splashStyles.subtitle}>Loading…</Text>
+      <ActivityIndicator
+        size="small"
+        color={colors.primary}
+        style={splashStyles.spinner}
+      />
+    </View>
+  );
+}
+
+const splashStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logo: { fontSize: 48, marginBottom: 12 },
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: colors.primaryDark,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+  spinner: { marginTop: 24 },
+});
 
 export default function RootLayout() {
   const { t } = useTranslation();
@@ -86,12 +130,19 @@ export default function RootLayout() {
   // ── Deep link handler: email confirmation ──────────────────────────────────
   useEffect(() => {
     if (!isSupabaseConfigured) return;
+    const isValidJwtFormat = (token: string) =>
+      /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token);
+
     const handleUrl = async (url: string) => {
       const fragment = url.split('#')[1] ?? '';
       const params = new URLSearchParams(fragment);
       const access_token = params.get('access_token');
       const refresh_token = params.get('refresh_token');
-      if (access_token && refresh_token) {
+      // Validate token format before accepting
+      if (
+        access_token && refresh_token &&
+        isValidJwtFormat(access_token) && isValidJwtFormat(refresh_token)
+      ) {
         await supabase.auth.setSession({ access_token, refresh_token });
       }
     };
@@ -112,6 +163,9 @@ export default function RootLayout() {
   useEffect(() => {
     if (!isReady) return;
     const inTabs     = segments[0] === '(tabs)';
+    const inChw      = segments[0] === '(chw)';
+    const inAdmin    = segments[0] === '(admin)';
+    const inParent   = segments[0] === '(parent)';
     const onAuth     = segments[0] === 'auth';
     const onBoarding = segments[0] === 'onboarding';
 
@@ -125,18 +179,19 @@ export default function RootLayout() {
           if (role === 'parent') { router.replace('/(parent)'); return; }
           router.replace('/(chw)'); return;
         }
-        // Redirect away from old (tabs) if not CHW
-        if (inTabs && role !== 'chw') {
-          if (role === 'admin')  { router.replace('/(admin)'); return; }
-          router.replace('/(parent)');
-        }
+        // Redirect CHW users away from legacy (tabs) into (chw)
+        if (inTabs && role === 'chw') { router.replace('/(chw)'); return; }
+        // Redirect users to their role-group if mismatched
+        if (inTabs && role === 'admin')  { router.replace('/(admin)'); return; }
+        if (inTabs && role === 'parent') { router.replace('/(parent)'); return; }
       }
     }
   }, [session, role, segments, isReady, hasSeenOnboarding]);
 
-  if (!isReady) return null;
+  if (!isReady) return <LoadingSplash />;
 
   return (
+    <AppErrorBoundary>
     <SafeAreaProvider>
       <StatusBar style="dark" backgroundColor={colors.background} />
       <View style={{ flex: 1 }}>
@@ -171,5 +226,6 @@ export default function RootLayout() {
       </Stack>
       </View>
     </SafeAreaProvider>
+    </AppErrorBoundary>
   );
 }

@@ -91,13 +91,23 @@ create table if not exists profiles (
 alter table profiles enable row level security;
 
 -- Auto-create profile on sign-up using user metadata
+-- SECURITY: Rejects 'admin' role from self-registration.
+-- Admin accounts must be created manually in the Supabase dashboard.
 create or replace function public.handle_new_user()
 returns trigger as $$
+declare
+  claimed_role text;
 begin
+  claimed_role := coalesce(new.raw_user_meta_data->>'role', 'parent');
+  -- Only allow 'chw' and 'parent' via self-signup
+  if claimed_role not in ('chw', 'parent') then
+    claimed_role := 'parent';
+  end if;
+
   insert into public.profiles (id, role, full_name)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data->>'role', 'parent'),
+    claimed_role,
     coalesce(new.raw_user_meta_data->>'full_name', '')
   )
   on conflict (id) do nothing;

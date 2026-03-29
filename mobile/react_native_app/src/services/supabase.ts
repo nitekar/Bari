@@ -4,20 +4,19 @@
  * Uses expo-secure-store on native for persisting auth tokens.
  * On web, falls back to localStorage automatically.
  *
- * ⚠️  Replace SUPABASE_URL and SUPABASE_ANON_KEY with your project values.
+ * Credentials are read from the centralized env config.
  */
 import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import {
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY,
+  IS_SUPABASE_CONFIGURED,
+} from '../config/env';
 
-// ── Your Supabase project credentials ────────────────────────────────────────
-const SUPABASE_URL = 'https://clmvkxgmpytgztthrdmk.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsbXZreGdtcHl0Z3p0dGhyZG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjI0OTUsImV4cCI6MjA4OTczODQ5NX0.1yr3LnYUnqlh6yahH0a7odjaPugRkiXMPZ_81yp4fiw';
-
-/** True only when real credentials have been configured. */
-export const isSupabaseConfigured =
-  !SUPABASE_URL.includes('YOUR_PROJECT_REF') &&
-  !SUPABASE_ANON_KEY.includes('YOUR_ANON_KEY');
+/** Re-export for backwards compatibility */
+export const isSupabaseConfigured = IS_SUPABASE_CONFIGURED;
 
 // ── Secure-store adapter (native only) ───────────────────────────────────────
 const ExpoSecureStoreAdapter = {
@@ -38,7 +37,6 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     ...(Platform.OS !== 'web' && isSupabaseConfigured ? { storage: ExpoSecureStoreAdapter } : {}),
     autoRefreshToken: isSupabaseConfigured,
     persistSession: isSupabaseConfigured,
-    skipAutoInitialize: !isSupabaseConfigured,
     detectSessionInUrl: false, // not needed in React Native
-  },
+  } as any,
 });

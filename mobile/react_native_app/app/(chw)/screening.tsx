@@ -1,20 +1,20 @@
 /**
  * app/(chw)/screening.tsx — Professional screening form for CHW role
  *
+ * Uses shared useScreeningForm hook for form logic.
  * Two modes:
  *   Quick Screen — image only → Anemic / Non-Anemic (binary)
  *   Full Screen  — image + clinical data → 4-class severity
  *
  * Layout: step cards + fixed bottom action bar
  */
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   Image,
-  Alert,
   TouchableOpacity,
   Platform,
 } from 'react-native';
@@ -27,16 +27,8 @@ import {
   GenderToggle,
   LoadingOverlay,
 } from '../../src/shared/components';
-import { useStore } from '../../src/store/useStore';
 import { useTranslation } from '../../src/i18n';
-import {
-  predictImage,
-  predictMultimodal,
-  OfflineError,
-} from '../../src/services/screeningService';
-import { useAnalyticsStore } from '../../src/store/analyticsStore';
-
-type ScreeningMode = 'quick' | 'full';
+import { useScreeningForm } from '../../src/shared/hooks/useScreeningForm';
 
 // ── Step header ───────────────────────────────────────────────────────────────
 function StepHeader({
@@ -108,92 +100,14 @@ function ModePill({
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function ScreeningScreen() {
-  const router   = useRouter();
-  const { t }    = useTranslation();
-  const insets   = useSafeAreaInsets();
+  const router = useRouter();
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const { state, actions, derived } = useScreeningForm();
 
-  const [mode, setMode]                     = useState<ScreeningMode>('full');
-  const [patientName, setPatientName]       = useState('');
-  const [patientLocation, setPatientLocation] = useState('');
-  const [age, setAge]                       = useState('');
-  const [gender, setGender]                 = useState(0);
-  const [hbLevel, setHbLevel]               = useState('');
-  const [offlineQueued, setOfflineQueued]   = useState(false);
-
-  const imageUri     = useStore((s) => s.imageUri);
-  const userId       = useStore((s) => s.userId);
-  const isLoading    = useStore((s) => s.isLoading);
-  const error        = useStore((s) => s.error);
-  const setResult    = useStore((s) => s.setResult);
-  const setLoading   = useStore((s) => s.setLoading);
-  const setError     = useStore((s) => s.setError);
-  const addToHistory = useStore((s) => s.addToHistory);
-  const trackEvent   = useAnalyticsStore((s) => s.trackEvent);
-
-  const ageNum   = parseFloat(age);
-  const hbNum    = hbLevel ? parseFloat(hbLevel) : null;
-  const hasAge   = !isNaN(ageNum) && ageNum >= 0;
-  const hasImage = !!imageUri;
-  const canSubmit = mode === 'quick' ? hasImage : hasAge && hasImage;
-
-  const steps = mode === 'quick' ? [hasImage] : [true, hasAge, hasImage];
+  const steps = state.mode === 'quick' ? [derived.hasImage] : [true, derived.hasAge, derived.hasImage];
   const completedSteps = steps.filter(Boolean).length;
   const totalSteps = steps.length;
-
-  const handleSubmit = useCallback(async () => {
-    if (!hasImage) {
-      Alert.alert('Missing Image', 'Please add a conjunctiva image to proceed.');
-      return;
-    }
-    if (mode === 'full' && !hasAge) {
-      Alert.alert('Missing Data', 'Please enter the patient age to continue.');
-      return;
-    }
-
-    setOfflineQueued(false);
-    setLoading(true);
-    setError(null);
-    trackEvent('screening_started', { mode });
-
-    try {
-      const result =
-        mode === 'quick'
-          ? await predictImage(imageUri!, userId)
-          : await predictMultimodal(
-              { imageUri: imageUri!, age: ageNum, gender, hb_level: hbNum },
-              userId,
-            );
-
-      setResult(result);
-      setLoading(false);
-      trackEvent('screening_completed', {
-        severity: result.prediction,
-        confidence: result.confidence,
-        mode,
-      });
-      addToHistory({
-        id: Date.now().toString(),
-        date: new Date().toISOString(),
-        prediction: result.prediction,
-        confidence: result.confidence,
-        mode: mode === 'quick' ? 'image' : 'multimodal',
-        age: mode === 'full' ? ageNum : undefined,
-        gender: mode === 'full' ? gender : undefined,
-        imageUrl: result.imageStoragePath,
-        patientName: patientName.trim() || undefined,
-        patientLocation: patientLocation.trim() || undefined,
-      });
-      router.push('/result');
-    } catch (err: any) {
-      setLoading(false);
-      if (err instanceof OfflineError) {
-        setOfflineQueued(true);
-        setError(null);
-      } else {
-        setError(err.message ?? 'Screening failed. Please try again.');
-      }
-    }
-  }, [mode, age, gender, hbLevel, imageUri, patientName, patientLocation]);
 
   return (
     <View style={styles.root}>
@@ -226,16 +140,16 @@ export default function ScreeningScreen() {
             label="Quick Screen"
             icon="eye-outline"
             description="Image only → Anemic / Non-Anemic"
-            active={mode === 'quick'}
-            onPress={() => setMode('quick')}
+            active={state.mode === 'quick'}
+            onPress={() => actions.setMode('quick')}
           />
           <View style={{ height: spacing.sm }} />
           <ModePill
             label="Full Screening"
             icon="clipboard-outline"
             description="Image + clinical data → Severity grade"
-            active={mode === 'full'}
-            onPress={() => setMode('full')}
+            active={state.mode === 'full'}
+            onPress={() => actions.setMode('full')}
           />
         </SectionCard>
 
@@ -248,39 +162,39 @@ export default function ScreeningScreen() {
           />
           <InputField
             label={t.screening.patientName}
-            value={patientName}
-            onChangeText={setPatientName}
+            value={state.patientName}
+            onChangeText={actions.setPatientName}
             placeholder="e.g. Amara Uwase"
           />
           <InputField
             label={t.screening.location}
-            value={patientLocation}
-            onChangeText={setPatientLocation}
+            value={state.patientLocation}
+            onChangeText={actions.setPatientLocation}
             placeholder="e.g. Kigali, Rwanda"
           />
         </SectionCard>
 
         {/* Step 3 — Clinical data (full mode only) */}
-        {mode === 'full' && (
+        {state.mode === 'full' && (
           <SectionCard>
             <StepHeader
               step={3}
               title="Clinical Data"
               subtitle="Required for severity classification"
-              complete={hasAge}
+              complete={derived.hasAge}
             />
             <InputField
               label={t.screening.patientAge}
-              value={age}
-              onChangeText={setAge}
+              value={state.age}
+              onChangeText={actions.setAge}
               placeholder={t.screening.agePlaceholder}
               keyboardType="numeric"
             />
-            <GenderToggle value={gender} onChange={setGender} />
+            <GenderToggle value={state.gender} onChange={actions.setGender} />
             <InputField
               label={`${t.screening.hemoglobin} (optional)`}
-              value={hbLevel}
-              onChangeText={setHbLevel}
+              value={state.hbLevel}
+              onChangeText={actions.setHbLevel}
               placeholder={t.screening.hbPlaceholder}
               keyboardType="decimal-pad"
             />
@@ -290,15 +204,15 @@ export default function ScreeningScreen() {
         {/* Step 4 — Image */}
         <SectionCard>
           <StepHeader
-            step={mode === 'full' ? 4 : 3}
+            step={state.mode === 'full' ? 4 : 3}
             title="Conjunctiva Image"
             subtitle="Inner eyelid photograph"
-            complete={hasImage}
+            complete={derived.hasImage}
           />
 
-          {hasImage ? (
+          {derived.hasImage ? (
             <View style={styles.imageContainer}>
-              <Image source={{ uri: imageUri! }} style={styles.imagePreview} />
+              <Image source={{ uri: derived.imageUri! }} style={styles.imagePreview} />
               <TouchableOpacity
                 style={styles.changeImageBtn}
                 onPress={() => router.push('/image-capture')}
@@ -334,7 +248,7 @@ export default function ScreeningScreen() {
         </SectionCard>
 
         {/* Offline notice */}
-        {offlineQueued && (
+        {state.offlineQueued && (
           <View style={styles.noticeBox}>
             <Ionicons name="cloud-outline" size={18} color={colors.primary} />
             <Text style={styles.noticeText}>
@@ -344,10 +258,10 @@ export default function ScreeningScreen() {
         )}
 
         {/* Error */}
-        {error && (
+        {derived.error && (
           <View style={styles.errorBox}>
             <Ionicons name="alert-circle-outline" size={18} color={colors.error} />
-            <Text style={styles.errorText}>{error}</Text>
+            <Text style={styles.errorText}>{derived.error}</Text>
           </View>
         )}
       </ScrollView>
@@ -357,24 +271,24 @@ export default function ScreeningScreen() {
         <View style={styles.actionInner}>
           <View style={{ flex: 1 }}>
             <Text style={styles.actionTitle}>
-              {mode === 'quick' ? 'Quick Screen' : 'Full Screening'}
+              {state.mode === 'quick' ? 'Quick Screen' : 'Full Screening'}
             </Text>
             <Text style={styles.actionSub}>
-              {canSubmit ? 'Ready to analyse' : 'Complete required fields above'}
+              {derived.canSubmit ? 'Ready to analyse' : 'Complete required fields above'}
             </Text>
           </View>
           <TouchableOpacity
-            style={[styles.analyseBtn, !canSubmit && styles.analyseBtnDisabled]}
-            onPress={handleSubmit}
-            disabled={!canSubmit || isLoading}
+            style={[styles.analyseBtn, !derived.canSubmit && styles.analyseBtnDisabled]}
+            onPress={actions.handleSubmit}
+            disabled={!derived.canSubmit || derived.isLoading}
             activeOpacity={0.85}
           >
             <Ionicons
               name="pulse-outline"
               size={18}
-              color={canSubmit ? colors.white : colors.disabled}
+              color={derived.canSubmit ? colors.white : colors.disabled}
             />
-            <Text style={[styles.analyseBtnText, !canSubmit && styles.analyseBtnTextDisabled]}>
+            <Text style={[styles.analyseBtnText, !derived.canSubmit && styles.analyseBtnTextDisabled]}>
               Analyse
             </Text>
           </TouchableOpacity>
@@ -382,8 +296,8 @@ export default function ScreeningScreen() {
       </View>
 
       <LoadingOverlay
-        visible={isLoading}
-        message={mode === 'quick' ? 'Analysing conjunctiva…' : 'Analysing patient data…'}
+        visible={derived.isLoading}
+        message={state.mode === 'quick' ? 'Analysing conjunctiva…' : 'Analysing patient data…'}
       />
     </View>
   );

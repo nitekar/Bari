@@ -20,7 +20,7 @@ export async function signUp(email: string, password: string) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: 'anemia-screening://' },
+    options: { emailRedirectTo: 'https://clmvkxgmpytgztthrdmk.supabase.co' },
   });
   if (error) throw new Error(error.message);
   if (data.user && data.user.identities && data.user.identities.length === 0) {
@@ -40,7 +40,7 @@ export async function signUpWithRole(
     email,
     password,
     options: {
-      emailRedirectTo: 'anemia-screening://',
+      emailRedirectTo: 'https://clmvkxgmpytgztthrdmk.supabase.co',
       data: { role, full_name: fullName ?? '' },
     },
   });
@@ -53,8 +53,10 @@ export async function signUpWithRole(
 
 // ── Password Reset ───────────────────────────────────────────────────────────
 export async function sendPasswordReset(email: string) {
+  // Use the Supabase project URL as redirect — the user resets on the
+  // hosted page, then returns to the app and signs in with the new password.
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: 'anemia-screening://reset-password',
+    redirectTo: 'https://clmvkxgmpytgztthrdmk.supabase.co',
   });
   if (error) throw new Error(error.message);
 }

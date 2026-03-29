@@ -1,17 +1,16 @@
 /**
- * app/screening.tsx — Main screening form
- * Supports two modes:
- *   Quick Screen — image only → binary (Anemic / Non-Anemic)
- *   Full Screen  — image + clinical data → 4-class severity
+ * app/(tabs)/screening.tsx — Main screening form
+ *
+ * Uses shared useScreeningForm hook for form logic.
+ * Supports Quick Screen (image-only) and Full Screen (image + clinical data).
  */
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   Image,
-  Alert,
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -25,91 +24,13 @@ import {
   LoadingOverlay,
   ErrorMessage,
 } from '../../src/shared/components';
-import { useStore } from '../../src/store/useStore';
 import { useTranslation } from '../../src/i18n';
-import { predictImage, predictMultimodal } from '../../src/services/screeningService';
-import { useAnalyticsStore } from '../../src/store/analyticsStore';
-
-type ScreeningMode = 'quick' | 'full';
+import { useScreeningForm } from '../../src/shared/hooks/useScreeningForm';
 
 export default function ScreeningScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-
-  // ── Mode ──
-  const [mode, setMode] = useState<ScreeningMode>('full');
-
-  // ── Local form state ──
-  const [patientName, setPatientName] = useState('');
-  const [patientLocation, setPatientLocation] = useState('');
-  const [age, setAge] = useState('');
-  const [gender, setGender] = useState(0);
-  const [hbLevel, setHbLevel] = useState('');
-
-  // ── Global state ──
-  const imageUri = useStore((s) => s.imageUri);
-  const userId = useStore((s) => s.userId);
-  const isLoading = useStore((s) => s.isLoading);
-  const error = useStore((s) => s.error);
-  const setResult = useStore((s) => s.setResult);
-  const setLoading = useStore((s) => s.setLoading);
-  const setError = useStore((s) => s.setError);
-  const addToHistory = useStore((s) => s.addToHistory);
-  const trackEvent = useAnalyticsStore((s) => s.trackEvent);
-
-  // ── Validation ──
-  const ageNum = parseFloat(age);
-  const hbNum = hbLevel ? parseFloat(hbLevel) : null;
-  const hasAge = !isNaN(ageNum) && ageNum >= 0;
-  const hasImage = !!imageUri;
-
-  const canSubmit = mode === 'quick' ? hasImage : hasAge && hasImage;
-
-  // ── Submit ──
-  const handleSubmit = useCallback(async () => {
-    if (!hasImage) {
-      Alert.alert('Missing Image', 'Please add a conjunctiva image to proceed.');
-      return;
-    }
-    if (mode === 'full' && !hasAge) {
-      Alert.alert('Missing Data', 'Please enter the patient age.');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    trackEvent('screening_started', { mode });
-
-    try {
-      const result = mode === 'quick'
-        ? await predictImage(imageUri!, userId)
-        : await predictMultimodal(
-            { imageUri: imageUri!, age: ageNum, gender, hb_level: hbNum },
-            userId,
-          );
-
-      setResult(result);
-      setLoading(false);
-
-      trackEvent('screening_completed', { severity: result.prediction, confidence: result.confidence, mode });
-      addToHistory({
-        id: Date.now().toString(),
-        date: new Date().toISOString(),
-        prediction: result.prediction,
-        confidence: result.confidence,
-        mode: mode === 'quick' ? 'image' : 'multimodal',
-        age: mode === 'full' ? ageNum : undefined,
-        gender: mode === 'full' ? gender : undefined,
-        imageUrl: result.imageStoragePath,
-        patientName: patientName.trim() || undefined,
-        patientLocation: patientLocation.trim() || undefined,
-      });
-
-      router.push('/result');
-    } catch (err: any) {
-      setError(err.message || 'Screening failed. Please try again.');
-    }
-  }, [mode, age, gender, hbLevel, imageUri, patientName, patientLocation]);
+  const { state, actions, derived } = useScreeningForm();
 
   return (
     <View style={styles.wrapper}>
@@ -121,30 +42,30 @@ export default function ScreeningScreen() {
         {/* Mode Toggle */}
         <View style={styles.modeToggle}>
           <TouchableOpacity
-            style={[styles.modeBtn, mode === 'quick' && styles.modeBtnActive]}
-            onPress={() => setMode('quick')}
+            style={[styles.modeBtn, state.mode === 'quick' && styles.modeBtnActive]}
+            onPress={() => actions.setMode('quick')}
             activeOpacity={0.8}
           >
             <Ionicons
               name="eye-outline"
               size={16}
-              color={mode === 'quick' ? colors.white : colors.primary}
+              color={state.mode === 'quick' ? colors.white : colors.primary}
             />
-            <Text style={[styles.modeBtnText, mode === 'quick' && styles.modeBtnTextActive]}>
+            <Text style={[styles.modeBtnText, state.mode === 'quick' && styles.modeBtnTextActive]}>
               Quick Screen
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.modeBtn, mode === 'full' && styles.modeBtnActive]}
-            onPress={() => setMode('full')}
+            style={[styles.modeBtn, state.mode === 'full' && styles.modeBtnActive]}
+            onPress={() => actions.setMode('full')}
             activeOpacity={0.8}
           >
             <Ionicons
               name="clipboard-outline"
               size={16}
-              color={mode === 'full' ? colors.white : colors.primary}
+              color={state.mode === 'full' ? colors.white : colors.primary}
             />
-            <Text style={[styles.modeBtnText, mode === 'full' && styles.modeBtnTextActive]}>
+            <Text style={[styles.modeBtnText, state.mode === 'full' && styles.modeBtnTextActive]}>
               Full Screen
             </Text>
           </TouchableOpacity>
@@ -152,7 +73,7 @@ export default function ScreeningScreen() {
 
         {/* Mode description */}
         <Text style={styles.modeHint}>
-          {mode === 'quick'
+          {state.mode === 'quick'
             ? 'Image only — detects Anemic / Non-Anemic'
             : 'Image + clinical data — classifies severity (Mild / Moderate / Severe)'}
         </Text>
@@ -162,35 +83,35 @@ export default function ScreeningScreen() {
 
         <InputField
           label={t.screening.patientName}
-          value={patientName}
-          onChangeText={setPatientName}
+          value={state.patientName}
+          onChangeText={actions.setPatientName}
           placeholder="e.g. Amara Uwase"
         />
 
         <InputField
           label={t.screening.location}
-          value={patientLocation}
-          onChangeText={setPatientLocation}
+          value={state.patientLocation}
+          onChangeText={actions.setPatientLocation}
           placeholder="e.g. Kigali, Rwanda"
         />
 
         {/* Clinical fields — Full Screen only */}
-        {mode === 'full' && (
+        {state.mode === 'full' && (
           <>
             <InputField
               label={t.screening.patientAge}
-              value={age}
-              onChangeText={setAge}
+              value={state.age}
+              onChangeText={actions.setAge}
               placeholder={t.screening.agePlaceholder}
               keyboardType="numeric"
             />
 
-            <GenderToggle value={gender} onChange={setGender} />
+            <GenderToggle value={state.gender} onChange={actions.setGender} />
 
             <InputField
               label={`${t.screening.hemoglobin} — ${t.screening.optional}`}
-              value={hbLevel}
-              onChangeText={setHbLevel}
+              value={state.hbLevel}
+              onChangeText={actions.setHbLevel}
               placeholder={t.screening.hbPlaceholder}
               keyboardType="decimal-pad"
             />
@@ -200,9 +121,9 @@ export default function ScreeningScreen() {
         {/* Image Section */}
         <Text style={styles.sectionTitle}>Conjunctiva Image</Text>
 
-        {imageUri ? (
+        {derived.imageUri ? (
           <Card>
-            <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+            <Image source={{ uri: derived.imageUri }} style={styles.imagePreview} />
             <View style={styles.imageActions}>
               <Button
                 title="Change Image"
@@ -226,18 +147,18 @@ export default function ScreeningScreen() {
         )}
 
         {/* Error */}
-        {error && <ErrorMessage message={error} onRetry={handleSubmit} />}
+        {derived.error && <ErrorMessage message={derived.error} onRetry={actions.handleSubmit} />}
 
         {/* Submit */}
         <View style={styles.submitContainer}>
           <Button
-            title={mode === 'quick' ? 'Quick Screen' : 'Run Full Screening'}
-            onPress={handleSubmit}
+            title={state.mode === 'quick' ? 'Quick Screen' : 'Run Full Screening'}
+            onPress={actions.handleSubmit}
             variant="primary"
-            loading={isLoading}
-            disabled={!canSubmit}
+            loading={derived.isLoading}
+            disabled={!derived.canSubmit}
             icon={
-              !isLoading ? (
+              !derived.isLoading ? (
                 <Ionicons name="pulse-outline" size={20} color={colors.white} />
               ) : undefined
             }
@@ -246,8 +167,8 @@ export default function ScreeningScreen() {
       </ScrollView>
 
       <LoadingOverlay
-        visible={isLoading}
-        message={mode === 'quick' ? 'Analyzing image…' : 'Analyzing patient data…'}
+        visible={derived.isLoading}
+        message={state.mode === 'quick' ? 'Analyzing image…' : 'Analyzing patient data…'}
       />
     </View>
   );

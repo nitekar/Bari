@@ -1,5 +1,5 @@
 /**
- * supabaseDb.ts — Database helpers for screenings & analytics events
+ * supabaseDb.ts — Database helpers for screenings, analytics, sleep & feeding logs
  *
  * All queries are scoped by user_id via RLS policies on the Supabase side,
  * but we also pass user_id explicitly for clarity and type safety.
@@ -74,4 +74,90 @@ export async function getAnalyticsEvents(
 
   if (error) throw new Error(`Failed to fetch events: ${error.message}`);
   return (data ?? []) as AnalyticsEventRow[];
+}
+
+// ── Sleep Logs ───────────────────────────────────────────────────────────────
+
+export interface SleepLogRow {
+  id: string;
+  user_id: string;
+  start_time: string;
+  end_time: string;
+  duration_hours: number;
+  notes: string;
+  date: string;
+  created_at: string;
+}
+
+/**
+ * Insert a sleep log entry.
+ */
+export async function saveSleepLog(
+  record: Omit<SleepLogRow, 'id' | 'created_at'>,
+): Promise<void> {
+  const { error } = await supabase.from('sleep_logs').insert(record);
+  if (error) {
+    console.warn('Failed to save sleep log:', error.message);
+  }
+}
+
+/**
+ * Fetch the authenticated user's sleep logs.
+ */
+export async function getSleepLogs(
+  userId: string,
+  limit = 200,
+): Promise<SleepLogRow[]> {
+  const { data, error } = await supabase
+    .from('sleep_logs')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(`Failed to fetch sleep logs: ${error.message}`);
+  return (data ?? []) as SleepLogRow[];
+}
+
+// ── Feeding Logs ─────────────────────────────────────────────────────────────
+
+export interface FeedingLogRow {
+  id: string;
+  user_id: string;
+  type: 'breastfeeding' | 'formula' | 'solid';
+  time: string;
+  quantity_ml?: number;
+  notes: string;
+  date: string;
+  created_at: string;
+}
+
+/**
+ * Insert a feeding log entry.
+ */
+export async function saveFeedingLog(
+  record: Omit<FeedingLogRow, 'id' | 'created_at'>,
+): Promise<void> {
+  const { error } = await supabase.from('feeding_logs').insert(record);
+  if (error) {
+    console.warn('Failed to save feeding log:', error.message);
+  }
+}
+
+/**
+ * Fetch the authenticated user's feeding logs.
+ */
+export async function getFeedingLogs(
+  userId: string,
+  limit = 200,
+): Promise<FeedingLogRow[]> {
+  const { data, error } = await supabase
+    .from('feeding_logs')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(`Failed to fetch feeding logs: ${error.message}`);
+  return (data ?? []) as FeedingLogRow[];
 }

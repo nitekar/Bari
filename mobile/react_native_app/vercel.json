@@ -1,6 +1,0 @@
-{
-  "installCommand": "npm install && chmod +x node_modules/.bin/expo",
-  "buildCommand": "npx expo export --platform web",
-  "outputDirectory": "dist",
-  "framework": null
-}

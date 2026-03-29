@@ -11,7 +11,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import * as SecureStore from 'expo-secure-store';
 import type { PredictionResponse } from '../services/types';
 import type { QueuedRequest } from '../services/offlineQueue';
-import { saveScreeningResult, getScreeningHistory } from '../services/supabaseDb';
+import { saveScreeningResult, getScreeningHistory, saveSleepLog, saveFeedingLog } from '../services/supabaseDb';
 import type { Language } from '../i18n/translations';
 import type { UserRole } from '../services/supabaseAuth';
 
@@ -209,15 +209,45 @@ export const useStore = create<AppState>()(
 
   clearHistory: () => set({ history: [] }),
 
-  addSleepLog: (log) =>
+  addSleepLog: (log) => {
     set((state) => ({
       sleepLogs: [log, ...state.sleepLogs].slice(0, 200),
-    })),
+    }));
+    // Sync to Supabase (fire-and-forget)
+    const userId = get().userId;
+    if (userId) {
+      saveSleepLog({
+        user_id: userId,
+        start_time: log.startTime,
+        end_time: log.endTime,
+        duration_hours: log.durationHours,
+        notes: log.notes,
+        date: log.date,
+      }).catch((err) => {
+        console.warn('Failed to persist sleep log to Supabase:', err.message);
+      });
+    }
+  },
 
-  addFeedingLog: (log) =>
+  addFeedingLog: (log) => {
     set((state) => ({
       feedingLogs: [log, ...state.feedingLogs].slice(0, 200),
-    })),
+    }));
+    // Sync to Supabase (fire-and-forget)
+    const userId = get().userId;
+    if (userId) {
+      saveFeedingLog({
+        user_id: userId,
+        type: log.type,
+        time: log.time,
+        quantity_ml: log.quantityMl,
+        notes: log.notes,
+        date: log.date,
+      }).catch((err) => {
+        console.warn('Failed to persist feeding log to Supabase:', err.message);
+      });
+    }
+  },
 
   addToQueue: (request) =>
     set((state) => ({

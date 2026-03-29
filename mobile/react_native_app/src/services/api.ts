@@ -1,32 +1,29 @@
 /**
- * api.ts — Axios instance with interceptors and optional mock adapter
+ * api.ts — Axios instance with auth, interceptors, and optional mock adapter
+ *
+ * Sends X-API-Key header on every request for backend authentication.
  */
 import axios from 'axios';
 import { attachMockAdapter } from './mockAdapter';
-
-/**
- * ⚠️  Replace with your actual backend URL before deploying.
- * For local development use your machine's IP (not localhost)
- * so the Expo Go app on a physical device can reach it.
- *
- * Examples:
- *   http://192.168.1.100:8000
- *   https://your-api.railway.app
- */
-const BASE_URL = 'https://web-production-c7c1.up.railway.app';
+import { API_BASE_URL, API_KEY } from '../config/env';
 
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_BASE_URL,
   timeout: 30_000, // 30 s — image uploads can be slow
   headers: {
     Accept: 'application/json',
   },
+  maxContentLength: 10 * 1024 * 1024, // 10 MB max response
+  maxBodyLength: 10 * 1024 * 1024,    // 10 MB max request body
 });
 
 // ── Request interceptor ──────────────────────────────────────────────────────
 api.interceptors.request.use(
   (config) => {
-    // Add any auth tokens here in the future
+    // Attach API key to every request
+    if (API_KEY) {
+      config.headers['X-API-Key'] = API_KEY;
+    }
     return config;
   },
   (error) => Promise.reject(error),
@@ -37,13 +34,18 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response) {
-      // Server responded with an error status
+      const status = error.response.status;
+      if (status === 401 || status === 403) {
+        return Promise.reject(new Error('Authentication failed. Please check API credentials.'));
+      }
+      if (status === 429) {
+        return Promise.reject(new Error('Too many requests. Please wait a moment and try again.'));
+      }
       const detail =
         error.response.data?.detail || 'Something went wrong on the server.';
       return Promise.reject(new Error(detail));
     }
     if (error.request) {
-      // No response received
       return Promise.reject(
         new Error('Unable to reach the server. Please check your connection.'),
       );
@@ -53,7 +55,7 @@ api.interceptors.response.use(
 );
 
 // ── Attach mock adapter only when backend URL is not configured ───────────────
-if (BASE_URL.includes('YOUR_BACKEND_URL')) {
+if (API_BASE_URL.includes('YOUR_BACKEND_URL')) {
   attachMockAdapter(api);
 }
 

@@ -3,11 +3,11 @@
  *
  * Four sections:
  * 1. Urgency banner (color-coded for moderate/severe)
- * 2. Referral letter generator (auto-populated from screening result)
+ * 2. Referral letter generator (auto-populated from screening result + history)
  * 3. Clinic finder (Rwanda-based health facilities)
  * 4. Emergency contacts (Rwanda health hotline +250 800 22 333)
  */
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -19,7 +19,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius, shadows } from '../src/shared/theme';
+import { colors, typography, spacing, borderRadius } from '../src/shared/theme';
 import { Card, Button } from '../src/shared/components';
 import { useStore } from '../src/store/useStore';
 import { useAnalyticsStore } from '../src/store/analyticsStore';
@@ -63,6 +63,7 @@ const EMERGENCY_NUMBER = '+250 800 22 333';
 
 export default function ReferralScreen() {
   const result = useStore((s) => s.result);
+  const history = useStore((s) => s.history);
   const trackEvent = useAnalyticsStore((s) => s.trackEvent);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
@@ -70,6 +71,17 @@ export default function ReferralScreen() {
   const isModerate = result?.prediction === 'Moderate';
   const urgencyColor = isSevere ? colors.severitySevere : colors.severityModerate;
   const urgencyBg = isSevere ? colors.severitySevereBg : colors.severityModerateBg;
+
+  // ── Resolve real patient data from the most recent history record ──
+  const latestRecord = useMemo(() => {
+    if (history.length === 0) return null;
+    return history[0]; // history is newest-first
+  }, [history]);
+
+  const patientAge = latestRecord?.age ?? 0;
+  const patientGender: 'Male' | 'Female' =
+    latestRecord?.gender === 1 ? 'Male' : 'Female';
+  const patientName = latestRecord?.patientName ?? undefined;
 
   const handleCallEmergency = useCallback(() => {
     Linking.openURL(`tel:${EMERGENCY_NUMBER}`).catch(() => {
@@ -97,9 +109,9 @@ export default function ReferralScreen() {
     setIsGeneratingPDF(true);
     try {
       const referralData: ReferralData = {
-        patientAge: 0, // Will be populated from store if available
-        patientGender: 'Female', // Default
-        screeningDate: new Date().toISOString(),
+        patientAge,
+        patientGender,
+        screeningDate: latestRecord?.date ?? new Date().toISOString(),
         prediction: result.prediction,
         confidence: result.confidence,
         referralAction: result.referral_action,
@@ -116,7 +128,7 @@ export default function ReferralScreen() {
     } finally {
       setIsGeneratingPDF(false);
     }
-  }, [result, trackEvent]);
+  }, [result, trackEvent, patientAge, patientGender, latestRecord]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -166,6 +178,20 @@ export default function ReferralScreen() {
           Generate a PDF referral letter auto-populated with your screening results. Share it with your healthcare provider.
         </Text>
         <View style={styles.letterPreview}>
+          {patientName && (
+            <View style={styles.letterField}>
+              <Text style={styles.letterLabel}>Patient Name:</Text>
+              <Text style={styles.letterValue}>{patientName}</Text>
+            </View>
+          )}
+          <View style={styles.letterField}>
+            <Text style={styles.letterLabel}>Age (months):</Text>
+            <Text style={styles.letterValue}>{patientAge || 'N/A'}</Text>
+          </View>
+          <View style={styles.letterField}>
+            <Text style={styles.letterLabel}>Gender:</Text>
+            <Text style={styles.letterValue}>{patientGender}</Text>
+          </View>
           <View style={styles.letterField}>
             <Text style={styles.letterLabel}>Screening Result:</Text>
             <Text style={[styles.letterValue, { color: urgencyColor }]}>
@@ -181,7 +207,9 @@ export default function ReferralScreen() {
           <View style={styles.letterField}>
             <Text style={styles.letterLabel}>Date:</Text>
             <Text style={styles.letterValue}>
-              {new Date().toLocaleDateString()}
+              {latestRecord
+                ? new Date(latestRecord.date).toLocaleDateString()
+                : new Date().toLocaleDateString()}
             </Text>
           </View>
           <View style={styles.letterField}>

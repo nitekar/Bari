@@ -7,4 +7,4 @@ export { default as ErrorMessage } from './ErrorMessage';
 export { default as GenderToggle } from './GenderToggle';
 export { default as OfflineIndicator } from './OfflineIndicator';
 export { default as Logo } from './Logo';
-
+export { default as ErrorBoundary } from './ErrorBoundary';

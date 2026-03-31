@@ -28,27 +28,31 @@ def build_nh_scaled(
     pil_image: Image.Image,
     age:       float,
     gender:    int,
-    scaler_nh: Any,
+    feature_probe_scaler: Any,
 ) -> np.ndarray:
     """
-    Extract LAB features + build + scale FEAT_NO_HB vector (16 features).
-    Used as input to the fusion model tabular branch.
+    Extract LAB features + build + scale FEAT_NO_HB vector.
+
+    This is retained for feature extraction parity and internal checks even
+    though the shipped multimodal path uses the Hb-augmented severity vector.
     """
     lab_feats = extract_lab_features(pil_image)
     raw       = build_nh_vector(lab_feats, age, gender)
-    return scale(raw, scaler_nh), lab_feats
+    return scale(raw, feature_probe_scaler), lab_feats
 
 
 def build_wh_scaled(
-    lab_feats:    dict,
-    age:          float,
-    gender:       int,
-    hb_estimated: float,
-    scaler_wh:    Any,
+    lab_feats:         dict,
+    age:               float,
+    gender:            int,
+    hb_estimated:      float,
+    severity_scaler:   Any,
 ) -> np.ndarray:
     """
-    Build + scale FEAT_WITH_HB vector (17 features) using estimated Hb.
-    Used as input to the RF With HB classifier.
+    Build + scale FEAT_WITH_HB vector using the image-estimated Hb.
+
+    This is the canonical production feature vector for the sequential
+    multimodal severity classifier.
     """
     raw = build_wh_vector(lab_feats, age, gender, hb_estimated)
-    return scale(raw, scaler_wh)
+    return scale(raw, severity_scaler)

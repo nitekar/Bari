@@ -185,10 +185,10 @@ describe('useStore', () => {
     it('adds and removes from offline queue', () => {
       const req = {
         id: 'q-1',
-        endpoint: '/predict/tabular',
+        endpoint: '/predict/multimodal',
         method: 'POST' as const,
-        body: { age: 12 },
-        contentType: 'application/json' as const,
+        body: { age: 12, gender: 0 },
+        contentType: 'multipart/form-data' as const,
         retryCount: 0,
         maxRetries: 3,
         nextRetryAt: new Date().toISOString(),

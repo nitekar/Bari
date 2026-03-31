@@ -220,6 +220,7 @@ export default function RootLayout() {
         <Stack.Screen name="result"        options={{ title: 'Results' }} />
         <Stack.Screen name="referral"      options={{ title: t.referral.referralLetter }} />
         <Stack.Screen name="settings"      options={{ title: t.settings.title }} />
+        <Stack.Screen name="legal"         options={{ title: 'Legal' }} />
         <Stack.Screen name="parent-sleep"       options={{ title: 'Sleep Log' }} />
         <Stack.Screen name="parent-feeding"     options={{ title: 'Feeding Log' }} />
         <Stack.Screen name="parent-development" options={{ title: 'Development Stage' }} />

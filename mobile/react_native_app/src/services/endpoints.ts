@@ -6,7 +6,6 @@
  */
 
 export interface ApiEndpoints {
-  readonly tabular: string;
   readonly image: string;
   readonly multimodal: string;
   readonly health: string;
@@ -17,13 +16,6 @@ export interface ApiEndpoints {
  *
  * ── RESTful API Contract ──
  *
- * POST /predict/tabular
- *   Body (JSON):
- *     - age: int (required) — Patient age in months
- *     - gender: int (required) — 0 = Female, 1 = Male
- *     - hb_level: float (optional) — Hemoglobin level in g/dL
- *   Response: PredictionResponse
- *
  * POST /predict/image
  *   Body (multipart/form-data):
  *     - file: File (required) — JPEG conjunctiva image
@@ -33,7 +25,7 @@ export interface ApiEndpoints {
  *   Body (multipart/form-data):
  *     - file: File (required) — JPEG conjunctiva image
  *     - age: int/string (required) — Patient age in months
- *     - gender: int/string (required) — 0 = Female, 1 = Male
+ *     - gender: int/string (required) — 0 = Male, 1 = Female
  *     - hb_level: float/string (optional) — Hemoglobin level in g/dL
  *   Response: PredictionResponse
  *
@@ -45,15 +37,13 @@ export interface ApiEndpoints {
  * |-----------|------------|----------|--------------------------------|
  * | file      | File       | Yes*     | JPEG conjunctiva image         |
  * | age       | int/string | Yes      | Patient age in months          |
- * | gender    | int/string | Yes      | 0 = Female, 1 = Male           |
+ * | gender    | int/string | Yes      | 0 = Male, 1 = Female           |
  * | hb_level  | float/str  | No       | Hemoglobin level in g/dL       |
  *
  * *Required for image and multimodal endpoints only.
  */
 export const endpoints: ApiEndpoints = {
-  tabular: '/predict/tabular',
   image: '/predict/image',
   multimodal: '/predict/multimodal',
   health: '/health',
 } as const;
-

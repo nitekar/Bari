@@ -25,12 +25,17 @@ describe('offlineQueue', () => {
 
   describe('createQueuedRequest', () => {
     it('creates a request with correct defaults', () => {
-      const req = createQueuedRequest('/predict/tabular', 'POST', { age: 12 }, 'application/json');
+      const req = createQueuedRequest(
+        '/predict/multimodal',
+        'POST',
+        { age: 12, gender: 0 },
+        'multipart/form-data',
+      );
 
-      expect(req.endpoint).toBe('/predict/tabular');
+      expect(req.endpoint).toBe('/predict/multimodal');
       expect(req.method).toBe('POST');
-      expect(req.body).toEqual({ age: 12 });
-      expect(req.contentType).toBe('application/json');
+      expect(req.body).toEqual({ age: 12, gender: 0 });
+      expect(req.contentType).toBe('multipart/form-data');
       expect(req.retryCount).toBe(0);
       expect(req.maxRetries).toBe(3);
       expect(req.id).toBeTruthy();

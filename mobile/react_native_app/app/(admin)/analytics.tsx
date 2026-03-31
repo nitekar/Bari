@@ -8,9 +8,8 @@ import { colors, spacing, borderRadius } from '../../src/shared/theme';
 import { Card } from '../../src/shared/components';
 import { useStore } from '../../src/store/useStore';
 
-const SEVERITY_ORDER = ['Normal', 'Mild', 'Moderate', 'Severe', 'Anemic', 'Non-Anemic'];
+const SEVERITY_ORDER = ['Non-Anemic', 'Mild', 'Moderate', 'Severe', 'Anemic'];
 const SEVERITY_COLORS: Record<string, string> = {
-  Normal: colors.primary,
   'Non-Anemic': colors.primary,
   Mild: '#f1c40f',
   Moderate: '#e67e22',

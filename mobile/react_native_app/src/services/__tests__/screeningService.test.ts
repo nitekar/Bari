@@ -32,7 +32,7 @@ jest.mock('../../store/useStore', () => ({
 }));
 
 import api from '../api';
-import { predictTabular } from '../screeningService';
+import { predictMultimodal } from '../screeningService';
 
 describe('screeningService', () => {
   beforeEach(() => {
@@ -52,13 +52,13 @@ describe('screeningService', () => {
     });
   });
 
-  describe('predictTabular', () => {
-    it('sends correct body and returns result with null imageStoragePath', async () => {
+  describe('predictMultimodal', () => {
+    it('posts to the supported multimodal endpoint and returns a storage path', async () => {
       const mockResponse = {
         data: {
-          prediction: 'Non-Anemic',
+          prediction: 'Moderate',
           confidence: 0.92,
-          class_probabilities: { 'Non-Anemic': 0.92, 'Mild': 0.05 },
+          class_probabilities: { 'Non-Anemic': 0.02, Mild: 0.06, Moderate: 0.92 },
           nutrition: 'Maintain balanced diet',
           recommended_foods: ['Iron-rich foods'],
           referral_action: 'No referral needed',
@@ -66,12 +66,22 @@ describe('screeningService', () => {
       };
       (api.post as jest.Mock).mockResolvedValue(mockResponse);
 
-      const result = await predictTabular({ age: 24, gender: 1 });
+      const result = await predictMultimodal({
+        imageUri: 'file:///tmp/image.jpg',
+        age: 24,
+        gender: 1,
+      }, 'user-123');
 
-      expect(api.post).toHaveBeenCalledWith('/predict/tabular', { age: 24, gender: 1 });
-      expect(result.prediction).toBe('Non-Anemic');
+      expect(api.post).toHaveBeenCalledWith(
+        '/predict/multimodal',
+        expect.any(FormData),
+        expect.objectContaining({
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }),
+      );
+      expect(result.prediction).toBe('Moderate');
       expect(result.confidence).toBe(0.92);
-      expect(result.imageStoragePath).toBeNull();
+      expect(result.imageStoragePath).toBe('user/123.jpg');
     });
 
     it('includes hb_level when provided', async () => {
@@ -86,25 +96,34 @@ describe('screeningService', () => {
         },
       });
 
-      await predictTabular({ age: 12, gender: 0, hb_level: 9.5 });
-
-      expect(api.post).toHaveBeenCalledWith('/predict/tabular', {
+      await predictMultimodal({
+        imageUri: 'file:///tmp/image.jpg',
         age: 12,
         gender: 0,
         hb_level: 9.5,
       });
+
+      expect(api.post).toHaveBeenCalledWith(
+        '/predict/multimodal',
+        expect.any(FormData),
+        expect.any(Object),
+      );
     });
 
     it('queues request and throws OfflineError on network failure', async () => {
       (api.post as jest.Mock).mockRejectedValue(new Error('Network Error'));
 
-      await expect(predictTabular({ age: 24, gender: 1 })).rejects.toThrow(OfflineError);
+      await expect(
+        predictMultimodal({ imageUri: 'file:///tmp/image.jpg', age: 24, gender: 1 }),
+      ).rejects.toThrow(OfflineError);
     });
 
     it('re-throws non-network errors', async () => {
       (api.post as jest.Mock).mockRejectedValue(new Error('Server error: 500'));
 
-      await expect(predictTabular({ age: 24, gender: 1 })).rejects.toThrow('Server error: 500');
+      await expect(
+        predictMultimodal({ imageUri: 'file:///tmp/image.jpg', age: 24, gender: 1 }),
+      ).rejects.toThrow('Server error: 500');
     });
   });
 });

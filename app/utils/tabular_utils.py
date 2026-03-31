@@ -1,7 +1,7 @@
 """
 utils/tabular_utils.py
-Feature vector construction and scaling for the RF and fusion models.
-Feature order must match Bari.ipynb exactly.
+Feature vector construction and scaling for the sequential multimodal
+severity pipeline. Feature order must match the shipped model artifact.
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ _HB_IDX_WH    = FEAT_WITH_HB.index("HB_LEVEL")           # 14
 
 def build_nh_vector(lab_feats: dict[str, float], age: float, gender: int) -> np.ndarray:
     """
-    Build FEAT_NO_HB feature vector (16 features) — used by the fusion model.
+    Build FEAT_NO_HB feature vector.
 
     Parameters
     ----------
@@ -46,7 +46,7 @@ def build_wh_vector(
     hb_estimated: float,
 ) -> np.ndarray:
     """
-    Build FEAT_WITH_HB feature vector (17 features) — used by the RF model
+    Build FEAT_WITH_HB feature vector for the production severity classifier
     after the visual CNN estimates Hb.
 
     Parameters

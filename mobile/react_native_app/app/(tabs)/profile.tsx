@@ -137,6 +137,13 @@ export default function ProfileScreen() {
           color={colors.accentDark}
           onPress={() => router.push('/education')}
         />
+        <View style={styles.divider} />
+        <MenuItem
+          icon="shield-checkmark-outline"
+          label="EULA & Privacy Policy"
+          color="#7E57C2"
+          onPress={() => router.push('/legal')}
+        />
       </Card>
 
       {/* ── App info ── */}

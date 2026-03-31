@@ -7,16 +7,20 @@ export interface PredictionResponse {
   prediction: string;
   confidence: number;
   class_probabilities: Record<string, number>;
+  hb_estimate_gdl?: number | null;
   nutrition: string;
   recommended_foods: string[];
   referral_action: string;
-}
 
-/** Request body for /predict/tabular */
-export interface TabularRequest {
-  age: number;
-  gender: number;
-  hb_level?: number | null;
+  // New structured decision-support fields
+  risk_level: 'low' | 'moderate' | 'high';
+  confidence_score: number;
+  recommendations: {
+    diet_plan: string;
+    foods_to_include: string[];
+    foods_to_avoid: string[];
+    urgency_level: 'routine' | 'elevated' | 'urgent';
+  };
 }
 
 /** Fields for multimodal request (sent as FormData) */

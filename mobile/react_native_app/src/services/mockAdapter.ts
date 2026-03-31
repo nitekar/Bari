@@ -112,18 +112,6 @@ const mockResponses: Record<string, PredictionResponse> = {
  * Determine which mock response to return based on the request data.
  */
 function selectMockResponse(config: InternalAxiosRequestConfig): PredictionResponse {
-  const url = config.url || '';
-
-  // For tabular requests, use age to determine severity
-  if (url.includes(endpoints.tabular)) {
-    const data = typeof config.data === 'string' ? JSON.parse(config.data) : config.data;
-    const age = data?.age ?? 24;
-    if (age < 6) return mockResponses.severe;
-    if (age < 12) return mockResponses.moderate;
-    if (age < 24) return mockResponses.mild;
-    return mockResponses.normal;
-  }
-
   // For image/multimodal, rotate through results
   const randomIndex = Math.random();
   if (randomIndex < 0.3) return mockResponses.normal;

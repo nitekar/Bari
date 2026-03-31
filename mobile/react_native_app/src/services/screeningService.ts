@@ -8,7 +8,7 @@
 import * as ImageManipulator from 'expo-image-manipulator';
 import api from './api';
 import { endpoints } from './endpoints';
-import type { PredictionResponse, TabularRequest, MultimodalFields } from './types';
+import type { PredictionResponse, MultimodalFields } from './types';
 import { uploadConjunctivaImage } from './supabaseStorage';
 import { createQueuedRequest } from './offlineQueue';
 import { useStore } from '../store/useStore';
@@ -97,35 +97,6 @@ export interface ScreeningResult extends PredictionResponse {
 }
 
 // ── Public API ───────────────────────────────────────────────────────────────
-
-/**
- * Tabular-only prediction (age, gender, optional hb_level).
- * Sends JSON body.
- */
-export async function predictTabular(
-  data: TabularRequest,
-): Promise<ScreeningResult> {
-  const body: Record<string, number> = {
-    age: data.age,
-    gender: data.gender,
-  };
-  if (data.hb_level != null) {
-    body.hb_level = data.hb_level;
-  }
-
-  try {
-    const response = await api.post<PredictionResponse>(endpoints.tabular, body);
-    return { ...response.data, imageStoragePath: null };
-  } catch (err) {
-    if (isNetworkError(err)) {
-      useStore.getState().addToQueue(
-        createQueuedRequest(endpoints.tabular, 'POST', body, 'application/json'),
-      );
-      throw new OfflineError();
-    }
-    throw err;
-  }
-}
 
 /**
  * Image-only prediction (conjunctiva photo).

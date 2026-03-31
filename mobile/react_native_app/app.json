@@ -52,6 +52,9 @@
     ],
     "extra": {
       "router": {},
+      "supabaseUrl": "https://clmvkxgmpytgztthrdmk.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsbXZreGdtcHl0Z3p0dGhyZG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjI0OTUsImV4cCI6MjA4OTczODQ5NX0.1yr3LnYUnqlh6yahH0a7odjaPugRkiXMPZ_81yp4fiw",
+      "apiBaseUrl": "https://web-production-c7c1.up.railway.app",
       "eas": {
         "projectId": "25e00d49-367f-4807-8d33-6c6e8db1d66b"
       }

@@ -13,7 +13,7 @@ import numpy as np
 logger = logging.getLogger("anemia-api.inference")
 
 # ── Class labels — must match notebook CLASS_NAMES ────────────────────────────
-CLASS_NAMES:        list[str] = ["Normal", "Mild", "Moderate", "Severe"]
+CLASS_NAMES:        list[str] = ["Non-Anemic", "Mild", "Moderate", "Severe"]
 VISUAL_CLASS_NAMES: list[str] = ["Non-Anemic", "Anemic"]
 
 
@@ -24,17 +24,17 @@ def anemia_label(hb: float, age_months: float, gender: str = "") -> str:
     Matches anemia_label() in the notebook config cell.
     """
     if 6 <= age_months < 24:
-        if   hb >= 10.5:           return "Normal"
+        if   hb >= 10.5:           return "Non-Anemic"
         elif 9.5  <= hb < 10.5:    return "Mild"
         elif 7.0  <= hb <  9.5:    return "Moderate"
         else:                       return "Severe"
     elif 24 <= age_months <= 60:
-        if   hb >= 11.0:           return "Normal"
+        if   hb >= 11.0:           return "Non-Anemic"
         elif 10.0 <= hb < 11.0:    return "Mild"
         elif 7.0  <= hb < 10.0:    return "Moderate"
         else:                       return "Severe"
     # Age outside 6-60 months: fall back to adult WHO threshold
-    return "Normal" if hb >= 12.0 else ("Mild" if hb >= 11.0 else
+    return "Non-Anemic" if hb >= 12.0 else ("Mild" if hb >= 11.0 else
            "Moderate" if hb >= 8.0 else "Severe")
 
 
@@ -122,7 +122,10 @@ def predict_fusion(
     hb_std:     float,
 ) -> tuple[int, float, np.ndarray, float]:
     """
-    Run the fusion TFLite model (image + 16 LAB features → severity + Hb).
+    Run the fusion TFLite model for the currently deployed artifact.
+
+    This path is intentionally treated as experimental by the API until the
+    exported model contract is validated against training.
 
     Returns
     -------
@@ -140,16 +143,16 @@ def predict_fusion(
 # ── Visual → RF pipeline ──────────────────────────────────────────────────────
 def predict_rf(
     scaled_wh_features: np.ndarray,
-    rf_model:           Any,
+    severity_model:     Any,
 ) -> tuple[int, float, np.ndarray]:
     """
-    Run RF With HB classifier on pre-scaled FEAT_WITH_HB features.
+    Run the production severity classifier on pre-scaled FEAT_WITH_HB features.
 
     Returns
     -------
     (severity_pred_idx, confidence, severity_probs)
     """
-    probs = rf_model.predict_proba(scaled_wh_features)[0]
+    probs = severity_model.predict_proba(scaled_wh_features)[0]
     pred  = int(np.argmax(probs))
     conf  = float(probs[pred])
     return pred, conf, probs

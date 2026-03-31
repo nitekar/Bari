@@ -2,10 +2,15 @@
 
 FastAPI application that predicts anemia severity from patient tabular data, conjunctiva images, or both combined. Backed by trained scikit-learn models and quantized TFLite neural networks, with SHAP explainability and rule-based nutritional guidance.
 
+> **Current production note**
+> The shipped multimodal path is the sequential pipeline:
+> `image -> visual model -> estimated Hb -> tabular severity classifier`.
+> This README contains older endpoint/model notes in later sections and should
+> be treated as partially stale until the full API documentation is rewritten.
+
 ---
 
 ## Table of Contents
-
 1. [Project Structure](#project-structure)
 2. [Prerequisites](#prerequisites)
 3. [Installation](#installation)
@@ -13,12 +18,14 @@ FastAPI application that predicts anemia severity from patient tabular data, con
 5. [Running the API](#running-the-api)
 6. [Environment Variables](#environment-variables)
 7. [Endpoints](#endpoints)
-   - [GET / — Health Check](#get----health-check)
-   - [POST /predict/tabular — Tabular Prediction](#post-predicttabular--tabular-prediction)
-   - [POST /predict/image — Image Prediction](#post-predictimage--image-prediction)
-   - [POST /predict/multimodal — Multimodal Prediction](#post-predictmultimodal--multimodal-prediction)
-   - [POST /explain/tabular — SHAP Explanation](#post-explaintabular--shap-explanation)
+   - [GET / Health Check](#get----health-check)
+   - [POST /predict/image Image Prediction](#post-predictimage--image-prediction)
+   - [POST /predict/multimodal Multimodal Prediction](#post-predictmultimodal--multimodal-prediction)
 8. [Input / Output Reference](#input--output-reference)
+9. [Class Mapping](#class-mapping)
+10. [Error Codes](#error-codes)
+11. [React Native Integration](#react-native-integration)
+12. [Generating Model Files from the Notebook](#generating-model-files-from-the-notebook)
 9. [Class Mapping](#class-mapping)
 10. [Error Codes](#error-codes)
 11. [React Native Integration](#react-native-integration)
@@ -65,7 +72,8 @@ Bari/
 | pip | ≥ 22 |
 | TensorFlow | ≥ 2.10 (for image / multimodal endpoints) |
 
-> **Note:** The tabular-only endpoints (`/predict/tabular`, `/explain/tabular`) work without TensorFlow. Image and multimodal endpoints require TensorFlow to be installed.
+> **Note:** The currently shipped API serves `/predict/image` and `/predict/multimodal`.
+> Legacy tabular and SHAP endpoints referenced in older sections are not active in `app/main.py`.
 
 ---
 
@@ -113,6 +121,13 @@ Each `.pkl` file is a `joblib` bundle with the structure:
 ```
 
 The API starts successfully even if some files are missing — missing models simply make their corresponding endpoints return `503 Service Unavailable`.
+
+> **Legacy artifact note**
+> The table above still reflects historical notebook exports. The current
+> production backend actively uses the visual TFLite model plus the
+> Hb-augmented severity classifier bundle. Older tabular-only and fusion
+> artifacts should be treated as research leftovers unless explicitly wired
+> back into the API.
 
 ---
 
@@ -166,11 +181,13 @@ Override any default model path without changing code:
 
 | Variable | Overrides | Example |
 |----------|-----------|---------|
-| `TAB_WH_PATH` | `tabular_with_hb.pkl` path | `/data/models/tab_wh.pkl` |
-| `TAB_NH_PATH` | `tabular_no_hb.pkl` path | `/data/models/tab_nh.pkl` |
+| `TAB_WH_PATH` | severity-classifier bundle path | `/data/models/tab_wh.pkl` |
+| `TAB_NH_PATH` | feature-probe scaler bundle path | `/data/models/tab_nh.pkl` |
 | `VIS_PATH` | `visual_model.tflite` path | `/data/models/visual.tflite` |
-| `MM_WH_PATH` | `multimodal_model.tflite` path | `/data/models/mm_wh.tflite` |
-| `MM_NH_PATH` | `multimodal_no_hb_model.tflite` path | `/data/models/mm_nh.tflite` |
+
+`TAB_*` variable names are legacy-compatible names. The current production path uses:
+- `TAB_WH_PATH` for the sequential severity classifier bundle
+- `TAB_NH_PATH` for the no-Hb scaler used to extract LAB/image-derived features consistently
 
 **Linux / macOS:**
 ```bash
@@ -483,13 +500,10 @@ print(r.json())
 
 ### Feature Vectors Sent to Models
 
-| Endpoint variant | Feature vector | Scaler applied |
-|-----------------|----------------|----------------|
-| `/predict/tabular` with `hb_level` | `[HB_LEVEL, Age(Months), Gender_F]` | `scaler_wh` (StandardScaler) |
-| `/predict/tabular` without `hb_level` | `[Age(Months), Gender_F]` | `scaler_nh` (StandardScaler) |
+| Production endpoint | Feature vector | Scaler applied |
+|--------------------|----------------|----------------|
 | `/predict/image` | `(1, 160, 160, 3)` float32 normalised image | None |
-| `/predict/multimodal` with `hb_level` | image + `[HB_LEVEL, Age(Months), Gender_F]` | `scaler_wh` on tabular branch |
-| `/predict/multimodal` without `hb_level` | image + `[Age(Months), Gender_F]` | `scaler_nh` on tabular branch |
+| `/predict/multimodal` | image -> LAB/image-derived features -> `[estimated_hb, LAB features, Age(Months), Gender]` | `feature_probe_scaler` for no-Hb feature extraction parity, then `severity_scaler` on the final severity vector |
 
 ---
 
@@ -607,3 +621,4 @@ Confirm all models are loaded:
 curl http://127.0.0.1:8000/
 # all "models_loaded" values should be true
 ```
+

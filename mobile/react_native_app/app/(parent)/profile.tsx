@@ -153,6 +153,17 @@ export default function ParentProfileScreen() {
         />
       )}
 
+      {/* ── Legal ── */}
+      <TouchableOpacity
+        style={styles.legalBtn}
+        onPress={() => router.push('/legal')}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="shield-checkmark-outline" size={18} color="#7E57C2" />
+        <Text style={styles.legalText}>EULA & Privacy Policy</Text>
+        <Ionicons name="chevron-forward" size={16} color={colors.textLight} />
+      </TouchableOpacity>
+
       <View style={{ height: 100 }} />
     </ScrollView>
   );
@@ -185,4 +196,17 @@ const styles = StyleSheet.create({
   genderBtnActive: { backgroundColor: colors.secondary, borderColor: colors.secondary },
   genderBtnText: { fontSize: 14, fontWeight: '600', color: colors.text },
   genderBtnTextActive: { color: colors.white },
+  legalBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  legalText: { flex: 1, fontSize: 14, fontWeight: '500', color: colors.text },
 });

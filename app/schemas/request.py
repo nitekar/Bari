@@ -11,13 +11,11 @@ from pydantic import BaseModel, Field, field_validator
 
 class TabularRequest(BaseModel):
     """
-    Input for /predict/tabular.
+    Legacy tabular request shape reused by older notebook/export flows.
 
-    age      : patient age in months (0 – 1200)
+    age      : patient age in months
     gender   : 0 = Male, 1 = Female
-    hb_level : haemoglobin level in g/dL (optional)
-               If present → model_with_hb is used.
-               If absent  → model_no_hb  is used.
+    hb_level : optional haemoglobin level in g/dL
     """
 
     age: float = Field(..., ge=0, le=1200, description="Age in months")

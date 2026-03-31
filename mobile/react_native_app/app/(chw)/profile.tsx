@@ -111,6 +111,8 @@ export default function ChwProfileScreen() {
         <MenuItem icon="time-outline" label={t.history.title} color={colors.secondaryDark} onPress={() => router.push('/history')} />
         <View style={styles.divider} />
         <MenuItem icon="book-outline" label={t.tabs.education} color={colors.accentDark} onPress={() => router.push('/education')} />
+        <View style={styles.divider} />
+        <MenuItem icon="shield-checkmark-outline" label="EULA & Privacy Policy" color="#7E57C2" onPress={() => router.push('/legal')} />
       </Card>
 
       <View style={styles.appInfo}>

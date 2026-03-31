@@ -1,17 +1,10 @@
-"""
-services/nutrition.py
-Rule-based nutritional recommendation engine.
-Maps predicted class index (0-3) → full guidance dict.
-"""
 from __future__ import annotations
 
 from typing import Dict, Any
 
 
-# ── Class index → severity label ──────────────────────────────────────────────
-CLASS_NAMES: list[str] = ["Normal", "Mild", "Moderate", "Severe"]
+CLASS_NAMES: list[str] = ["Non-Anemic", "Mild", "Moderate", "Severe"]
 
-# ── Short advice (used in compact responses) ──────────────────────────────────
 nutrition_map: Dict[int, str] = {
     0: "Maintain a balanced diet with iron-rich foods.",
     1: "Increase iron and vitamin C intake.",
@@ -19,10 +12,9 @@ nutrition_map: Dict[int, str] = {
     3: "Seek urgent medical care immediately.",
 }
 
-# ── Full guidance (used in detailed responses) ────────────────────────────────
 _FULL_GUIDE: Dict[int, Dict[str, Any]] = {
     0: {
-        "label": "Normal",
+        "label": "Non-Anemic",
         "urgency": "Normal",
         "hb_range": "≥ 12 g/dL (F) | ≥ 13 g/dL (M)",
         "advice": "Maintain a balanced diet with iron-rich foods.",
@@ -111,7 +103,6 @@ _FULL_GUIDE: Dict[int, Dict[str, Any]] = {
 }
 
 
-# ── Binary (image-only) guidance — "Anemic" vs "Non-Anemic" ──────────────────
 VISUAL_CLASS_NAMES: list[str] = ["Non-Anemic", "Anemic"]
 
 _BINARY_GUIDE: dict[int, dict] = {
@@ -138,13 +129,11 @@ _BINARY_GUIDE: dict[int, dict] = {
 
 
 def get_binary_guidance(class_idx: int) -> dict:
-    """Return guidance for binary visual model (0=Non-Anemic, 1=Anemic)."""
     return dict(_BINARY_GUIDE.get(class_idx, _BINARY_GUIDE[1]))
 
 
 # ── Public API ─────────────────────────────────────────────────────────────────
 def get_short_advice(class_idx: int) -> str:
-    """Return a single-line nutrition note for the predicted class."""
     return nutrition_map.get(class_idx, "Consult a healthcare professional.")
 
 
@@ -153,11 +142,6 @@ def get_full_guidance(
     age_months: float | None = None,
     gender: int | None = None,
 ) -> Dict[str, Any]:
-    """
-    Return a full guidance dict for the predicted class.
-
-    Optionally adjusts advice for infants (< 24 months) and females.
-    """
     guide = dict(_FULL_GUIDE.get(class_idx, _FULL_GUIDE[0]))
 
     age_note = ""
@@ -171,7 +155,7 @@ def get_full_guidance(
             age_note = " (Elderly: supplementation may improve absorption.)"
 
     gender_note = ""
-    if gender == 1 and class_idx > 0:           # Female + anemic
+    if gender == 1 and class_idx > 0:
         gender_note = " Females have elevated iron requirements."
 
     guide["advice"] = guide["advice"] + age_note + gender_note

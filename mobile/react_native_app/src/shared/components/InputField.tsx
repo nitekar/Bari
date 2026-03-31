@@ -8,6 +8,7 @@ import {
   TextInput,
   StyleSheet,
   KeyboardTypeOptions,
+  TextStyle,
   ViewStyle,
 } from 'react-native';
 import { colors, typography, spacing, borderRadius, shadows } from '../theme';
@@ -57,6 +58,14 @@ const InputField: React.FC<InputFieldProps> = ({
   );
 };
 
+const inputShadow: TextStyle = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.04,
+  shadowRadius: 4,
+  elevation: 1,
+};
+
 const styles = StyleSheet.create({
   container: {
     marginBottom: spacing.md,
@@ -77,7 +86,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     color: colors.text,
-    ...shadows.sm,
+    ...inputShadow,
   },
   inputDisabled: {
     backgroundColor: colors.surfaceElevated,

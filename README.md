@@ -2,6 +2,9 @@
 
 A multimodal machine learning system that predicts **anemia severity** from conjunctiva (inner eyelid) images and patient clinical data. Combines a fine-tuned MobileNetV2 visual model with tabular classifiers in a TFLite fusion network, served via a FastAPI REST API.
 
+> Current API status: the production backend currently exposes `/predict/image`, `/predict/multimodal`, `/health`, and `/`.
+> Some sections below still mention legacy research endpoints and are pending full documentation cleanup.
+
 ---
 
 ## Table of Contents

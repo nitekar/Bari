@@ -1,0 +1,5 @@
+artifact,status,type,details,notes
+models\saved_models\multimodal_model.tflite,error,,,No module named 'tflite_runtime'
+models\saved_models\multimodal_no_hb_model.tflite,error,,,No module named 'tflite_runtime'
+models\saved_models\tabular_rf.pkl,error,,,No module named 'joblib'
+models\saved_models\visual_model.tflite,error,,,No module named 'tflite_runtime'

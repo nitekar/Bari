@@ -1,5 +1,8 @@
 /**
- * colors.ts — Professional baby-tone medical palette
+ * colors.ts — Baby-friendly pastel medical palette
+ *
+ * Warm, playful pastels with high contrast for readability.
+ * Includes module-specific tints for educational sections.
  */
 
 export const colors = {
@@ -48,6 +51,32 @@ export const colors = {
   warningBg: '#FEF8E6',
   white: '#FFFFFF',
   overlay: 'rgba(26, 46, 69, 0.45)',
+
+  // ── Baby Education Module Colors ──
+  milestones: '#7E57C2',       // purple — milestones
+  milestonesBg: '#EDE7F6',
+  feeding: '#FF8A65',          // coral — feeding
+  feedingBg: '#FBE9E7',
+  nutrition: '#66BB6A',        // green — nutrition
+  nutritionBg: '#E8F5E9',
+  activities: '#42A5F5',       // sky blue — activities
+  activitiesBg: '#E3F2FD',
+  anemia: '#EF5350',           // red — anemia education
+  anemiaBg: '#FFEBEE',
+  feedingPlan: '#FFA726',      // amber — feeding plan
+  feedingPlanBg: '#FFF3E0',
+
+  // ── Baby-Friendly Accent Palette ──
+  peach: '#FFB4A2',
+  peachBg: '#FFF0EC',
+  lavender: '#B39DDB',
+  lavenderBg: '#EDE7F6',
+  mint: '#80CBC4',
+  mintBg: '#E0F2F1',
+  buttercup: '#FFD54F',
+  buttercupBg: '#FFFDE7',
+  blush: '#F48FB1',
+  blushBg: '#FCE4EC',
 } as const;
 
 /** Map severity label to color */

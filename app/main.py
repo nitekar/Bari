@@ -4,7 +4,7 @@ import logging
 import os
 import secrets
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, Annotated
 
 import joblib
 import numpy as np
@@ -23,6 +23,12 @@ from app.services.inference import (
     build_visual_probabilities_dict,
     predict_rf,
     predict_visual,
+)
+from app.services.inference import (
+    predict_fusion,
+    late_fusion_weighted_average,
+    compare_fusion_vs_individuals,
+    adapt_tab_array_for_interpreter,
 )
 from app.services.nutrition import get_full_guidance, get_binary_guidance
 from app.services.preprocessing import (
@@ -79,6 +85,15 @@ MODEL_PATHS: dict[str, str] = {
         "VISUAL_PATH",
         os.path.join(_ROOT, "models", "saved_models", "visual_model.tflite"),
     ),
+    # Multimodal fusion models (optional)
+    "multimodal_with_hb": os.environ.get(
+        "MM_WH_PATH",
+        os.path.join(_ROOT, "models", "saved_models", "multimodal_model.tflite"),
+    ),
+    "multimodal_no_hb": os.environ.get(
+        "MM_NH_PATH",
+        os.path.join(_ROOT, "models", "saved_models", "multimodal_no_hb_model.tflite"),
+    ),
 }
 
 # ── Registry ──────────────────────────────────────────────────────────────────
@@ -89,6 +104,8 @@ _reg: dict[str, Any] = {
     "hb_mean":             10.0,   # fallback — overwritten from pkl
     "hb_std":               2.0,   # fallback
     "visual_interp":       None,   # TFLite visual model
+        "multimodal_with_hb_interp": None,
+        "multimodal_no_hb_interp":   None,
 }
 
 
@@ -142,10 +159,28 @@ async def lifespan(app: FastAPI):
                 logger.info(f"  [OK] {path_key} TFLite")
             else:
                 logger.warning(f"  [MISSING] {path_key} → {path}")
+        # Multimodal fusion models (optional)
+        for key, path_key in [("multimodal_with_hb_interp", "multimodal_with_hb"), ("multimodal_no_hb_interp", "multimodal_no_hb")]:
+            path = MODEL_PATHS[path_key]
+            if os.path.exists(path):
+                try:
+                    interp = Interp(model_path=path)
+                    interp.allocate_tensors()
+                    _reg[key] = interp
+                    logger.info(f"  [OK] {path_key} TFLite")
+                except Exception as exc:
+                    logger.warning(f"  [ERROR] loading {path_key}: {exc}")
+            else:
+                logger.info(f"  [MISSING] {path_key} → {path}")
     except ImportError:
         logger.warning("TensorFlow not installed — TFLite endpoints unavailable.")
 
     logger.info("Startup complete.")
+    # Expose registry on app state for route modules to consume.
+    app.state.registry = _reg
+    # Expose max upload size for route handlers
+    app.extra = getattr(app, "extra", {})
+    app.extra["max_upload_bytes"] = MAX_UPLOAD_BYTES
     yield
     logger.info("Shutting down.")
 
@@ -214,199 +249,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"detail": "Internal server error.", "code": 500})
 
 
-# ── Health ────────────────────────────────────────────────────────────────────
-@app.get("/", response_model=HealthResponse, tags=["Health"])
-@app.get("/health", response_model=HealthResponse, tags=["Health"])
-@limiter.limit("60/minute")
-async def health_check(request: Request) -> HealthResponse:
-    return HealthResponse(
-        status="API running",
-        version="3.0.0",
-        models_loaded={
-            "severity_classifier": _reg["severity_model"] is not None,
-            "visual_tflite": _reg["visual_interp"] is not None,
-        },
-    )
+from api import routes as api_routes
 
-
-# ── Multimodal prediction ─────────────────────────────────────────────────────
-@app.post(
-    "/predict/multimodal",
-    response_model=PredictionResponse,
-    tags=["Prediction"],
-    summary="Sequential multimodal severity prediction from image + patient data",
-)
-@limiter.limit("30/minute")
-async def predict_multimodal_endpoint(
-    request: Request,
-    file:   UploadFile = File(..., description="Conjunctiva image (JPEG / PNG)"),
-    age:    float      = Form(..., ge=0, le=1200, description="Age in months"),
-    gender: int        = Form(..., ge=0, le=1,    description="0=Male | 1=Female"),
-    hb_level: float | None = Form(
-        None,
-        ge=0,
-        le=25,
-        description="Optional measured Hb in g/dL. If provided, it is used by the severity classifier.",
-    ),
-) -> PredictionResponse:
-    """
-    **Sequential multimodal severity prediction**
-
-        The shipped production path is:
-      image → visual model → estimated Hb
-      estimated Hb + age + gender + LAB features → RF severity classifier
-
-        No blood test is required at inference time. If `hb_level` is provided,
-        the classifier uses measured Hb for severity while still returning image-estimated Hb.
-    """
-    if _reg["visual_interp"] is None:
-        raise HTTPException(503, "Visual model not loaded.")
-    if _reg["severity_model"] is None:
-        raise HTTPException(503, "Severity classifier not loaded.")
-
-    try:
-        validate_image_content_type(file.content_type or "")
-    except ValueError as exc:
-        raise HTTPException(422, str(exc)) from exc
-
-    raw = await file.read()
-    if not raw:
-        raise HTTPException(422, "Uploaded file is empty.")
-    if len(raw) > MAX_UPLOAD_BYTES:
-        raise HTTPException(
-            413, f"File too large. Maximum allowed size is {MAX_UPLOAD_BYTES // (1024*1024)} MB."
-        )
-
-    try:
-        img_arr, pil = preprocess_image_bytes(raw)
-    except ValueError as exc:
-        raise HTTPException(422, f"Image error: {exc}") from exc
-
-    hb_mean = _reg["hb_mean"]
-    hb_std  = _reg["hb_std"]
-    try:
-        _, _, _, hb_gdl = predict_visual(img_arr, _reg["visual_interp"], hb_mean, hb_std)
-    except Exception as exc:
-        logger.error(f"Visual inference failed: {exc}", exc_info=True)
-        raise HTTPException(500, "Visual model inference failed.") from exc
-
-    hb_for_severity = float(hb_level) if hb_level is not None else float(hb_gdl)
-
-    try:
-        _, lab_feats = build_nh_scaled(pil, age, gender, _reg["feature_probe_scaler"])
-        tab_wh_scaled = build_wh_scaled(
-            lab_feats,
-            age,
-            gender,
-            hb_for_severity,
-            _reg["severity_scaler"],
-        )
-    except Exception as exc:
-        raise HTTPException(500, f"Feature extraction failed: {exc}") from exc
-
-    try:
-        pred_idx, conf, probs = predict_rf(tab_wh_scaled, _reg["severity_model"])
-    except Exception as exc:
-        logger.error(f"Severity classifier inference failed: {exc}", exc_info=True)
-        raise HTTPException(500, "Severity classifier inference failed.") from exc
-
-    severity = CLASS_NAMES[pred_idx]
-    hb_source = "measured" if hb_level is not None else "estimated"
-    logger.info(
-        "/predict/multimodal [sequential] → %s (%.3f) Hb_used=%.2f (%s) Hb_est=%.2f age=%s gender=%s",
-        severity,
-        conf,
-        hb_for_severity,
-        hb_source,
-        hb_gdl,
-        age,
-        gender,
-    )
-    guide = get_full_guidance(pred_idx, age_months=age, gender=gender)
-    rec = build_structured_recommendations(severity, conf, age_months=age)
-
-    return PredictionResponse(
-        prediction=severity,
-        confidence=round(conf, 4),
-        confidence_score=round(conf, 4),
-        risk_level=rec["risk_level"],
-        class_probabilities=build_probabilities_dict(probs),
-        hb_estimate_gdl=round(hb_gdl, 2),
-        nutrition=guide["advice"],
-        recommended_foods=guide["foods"],
-        referral_action=guide["referral"],
-        recommendations=rec["recommendations"],
-    )
-
-
-# ── Quick binary screen ───────────────────────────────────────────────────────
-@app.post(
-    "/predict/image",
-    response_model=PredictionResponse,
-    tags=["Prediction"],
-    summary="Quick binary screen (Anemic / Non-Anemic) from image only",
-)
-@limiter.limit("30/minute")
-async def predict_image_endpoint(
-    request: Request,
-    file: UploadFile = File(..., description="Conjunctiva image (JPEG / PNG)"),
-) -> PredictionResponse:
-    """
-    **Quick binary screen**
-
-    Uses the visual CNN to classify as Non-Anemic or Anemic and estimate Hb.
-    No clinical data required. For 4-class severity use `/predict/multimodal`.
-    """
-    if _reg["visual_interp"] is None:
-        raise HTTPException(503, "Visual model not loaded.")
-
-    try:
-        validate_image_content_type(file.content_type or "")
-    except ValueError as exc:
-        raise HTTPException(422, str(exc)) from exc
-
-    raw = await file.read()
-    if not raw:
-        raise HTTPException(422, "Uploaded file is empty.")
-    if len(raw) > MAX_UPLOAD_BYTES:
-        raise HTTPException(
-            413, f"File too large. Maximum allowed size is {MAX_UPLOAD_BYTES // (1024*1024)} MB."
-        )
-
-    try:
-        img_arr, _ = preprocess_image_bytes(raw)
-    except ValueError as exc:
-        raise HTTPException(422, f"Image error: {exc}") from exc
-
-    try:
-        pred_idx, conf, probs, hb_gdl = predict_visual(
-            img_arr, _reg["visual_interp"], _reg["hb_mean"], _reg["hb_std"]
-        )
-    except Exception as exc:
-        logger.error(f"Visual inference failed: {exc}", exc_info=True)
-        raise HTTPException(500, "Visual model inference failed.") from exc
-
-    from app.services.inference import VISUAL_CLASS_NAMES
-    label = VISUAL_CLASS_NAMES[pred_idx]
-    guide = get_binary_guidance(pred_idx)
-    # Age is unknown for the quick screen; use a safe default in the 6–60 month band
-    default_age_months = 24.0
-    rec = build_structured_recommendations(label, conf, age_months=default_age_months)
-    logger.info(f"/predict/image → {label} ({conf:.3f}) Hb≈{hb_gdl:.2f}")
-
-    return PredictionResponse(
-        prediction=label,
-        confidence=round(conf, 4),
-        confidence_score=round(conf, 4),
-        risk_level=rec["risk_level"],
-        class_probabilities=build_visual_probabilities_dict(probs),
-        hb_estimate_gdl=round(hb_gdl, 2),
-        nutrition=guide["advice"],
-        recommended_foods=guide["foods"],
-        referral_action=guide["referral"],
-        recommendations=rec["recommendations"],
-    )
-
-
-# Import here to avoid circular reference in response builder above
-from app.services.inference import CLASS_NAMES  # noqa: E402
+# Include migrated API routes implemented in `api/routes.py`
+app.include_router(api_routes.router)

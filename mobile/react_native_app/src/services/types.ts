@@ -12,10 +12,10 @@ export interface PredictionResponse {
   recommended_foods: string[];
   referral_action: string;
 
-  // New structured decision-support fields
-  risk_level: 'low' | 'moderate' | 'high';
-  confidence_score: number;
-  recommendations: {
+  // New structured decision-support fields (optional — backend may not return these)
+  risk_level?: 'low' | 'moderate' | 'high';
+  confidence_score?: number;
+  recommendations?: {
     diet_plan: string;
     foods_to_include: string[];
     foods_to_avoid: string[];

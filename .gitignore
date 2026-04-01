@@ -10,8 +10,8 @@ venv/
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
-# Data (large — do not commit)
-data/
+# Data (large — do not commit root-level data only)
+/data/
 
 # Node / Expo
 node_modules/

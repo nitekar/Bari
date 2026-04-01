@@ -7,6 +7,9 @@ __pycache__
 *.pyd
 .pytest_cache
 .mypy_cache
-Notebook
+Notebook/*.ipynb
+Notebook/*.py
+Notebook/data
+Notebook/__pycache__
 mobile/react_native_app/node_modules
 mobile/react_native_app/.expo

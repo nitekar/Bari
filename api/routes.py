@@ -6,7 +6,7 @@ and behaviour remain unchanged during migration.
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 import logging
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
@@ -33,6 +33,21 @@ router = APIRouter()
 logger = logging.getLogger("anemia-api")
 
 
+@router.get("/health", tags=["Health"], summary="Health check endpoint")
+async def health_check(request: Request) -> Any:
+    reg = getattr(request.app.state, "registry", {})
+    return {
+        "status": "ok",
+        "version": getattr(request.app, "version", "3.0.0"),
+        "models_loaded": {
+            "visual": reg.get("visual_interp") is not None,
+            "severity": reg.get("severity_model") is not None,
+            "multimodal_with_hb": reg.get("multimodal_with_hb_interp") is not None,
+            "multimodal_no_hb": reg.get("multimodal_no_hb_interp") is not None,
+        },
+    }
+
+
 @router.post(
     "/predict/multimodal",
     response_model=None,
@@ -44,9 +59,11 @@ async def predict_multimodal_endpoint(
     file: UploadFile = File(..., description="Conjunctiva image (JPEG / PNG)"),
     age: float = Form(..., ge=0, le=1200, description="Age in months"),
     gender: int = Form(..., ge=0, le=1, description="0=Male | 1=Female"),
-    hb_level: float | None = Form(None, ge=0, le=25, description="Optional measured Hb in g/dL."),
+    hb_level: Optional[float] = Form(None, ge=0, le=25, description="Optional measured Hb in g/dL."),
 ) -> Any:
-    reg = request.app.state.registry
+    reg = getattr(request.app.state, "registry", None)
+    if reg is None:
+        raise HTTPException(503, "Models not loaded yet (server starting up).")
 
     if reg.get("visual_interp") is None:
         raise HTTPException(503, "Visual model not loaded.")
@@ -147,7 +164,9 @@ async def predict_multimodal_endpoint(
     summary="Quick binary screen (Anemic / Non-Anemic) from image only",
 )
 async def predict_image_endpoint(request: Request, file: UploadFile = File(...)) -> Any:
-    reg = request.app.state.registry
+    reg = getattr(request.app.state, "registry", None)
+    if reg is None:
+        raise HTTPException(503, "Models not loaded yet (server starting up).")
 
     if reg.get("visual_interp") is None:
         raise HTTPException(503, "Visual model not loaded.")

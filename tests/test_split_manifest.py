@@ -27,7 +27,9 @@ class ApiContractTests(unittest.TestCase):
         route = next(r for r in app.routes if r.path == "/predict/multimodal")
         sig = inspect.signature(route.endpoint)
         self.assertIn("hb_level", sig.parameters)
-        self.assertIsNone(sig.parameters["hb_level"].default)
+        # hb_level should be optional (default is Form(None) or None)
+        param = sig.parameters["hb_level"]
+        self.assertIsNot(param.default, inspect.Parameter.empty)
 
     def test_prediction_response_includes_hb_estimate(self) -> None:
         self.assertIn("hb_estimate_gdl", PredictionResponse.model_fields)

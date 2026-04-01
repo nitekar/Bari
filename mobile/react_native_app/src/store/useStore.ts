@@ -102,6 +102,9 @@ interface AppState {
   offlineQueue: QueuedRequest[];
   lastSyncedAt: Date | null;
 
+  // ── Education progress ──
+  completedItems: string[];
+
   // ── UI State ──
   isLoading: boolean;
   error: string | null;
@@ -122,6 +125,8 @@ interface AppState {
   addToQueue: (request: QueuedRequest) => void;
   removeFromQueue: (id: string) => void;
   setLastSyncedAt: (date: Date) => void;
+  toggleCompleted: (itemId: string) => void;
+  clearCompleted: () => void;
   reset: () => void;
 }
 
@@ -140,6 +145,7 @@ const initialState = {
   feedingLogs: [] as FeedingLog[],
   offlineQueue: [] as QueuedRequest[],
   lastSyncedAt: null as Date | null,
+  completedItems: [] as string[],
   isLoading: false,
   error: null,
 };
@@ -259,6 +265,17 @@ export const useStore = create<AppState>()(
     })),
   setLastSyncedAt: (date) => set({ lastSyncedAt: date }),
 
+  toggleCompleted: (itemId) => set((state) => {
+    const idx = state.completedItems.indexOf(itemId);
+    return {
+      completedItems: idx >= 0
+        ? state.completedItems.filter((id) => id !== itemId)
+        : [...state.completedItems, itemId],
+    };
+  }),
+
+  clearCompleted: () => set({ completedItems: [] }),
+
   reset: () =>
     set({
       result: null,
@@ -281,6 +298,7 @@ export const useStore = create<AppState>()(
         history: state.history,
         offlineQueue: state.offlineQueue,
         lastSyncedAt: state.lastSyncedAt,
+        completedItems: state.completedItems,
       }),
     },
   ),

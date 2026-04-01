@@ -271,7 +271,7 @@ function ResultScreen() {
           title="Screen Again"
           onPress={() => {
             reset();
-            router.push('/screening');
+            router.replace('/');
           }}
           variant="primary"
           style={styles.actionBtn}
@@ -280,7 +280,7 @@ function ResultScreen() {
         <View style={{ width: spacing.md }} />
         <Button
           title="Learn More"
-          onPress={() => router.push('/education')}
+          onPress={() => router.back()}
           variant="outline"
           style={styles.actionBtn}
           icon={<Ionicons name="book-outline" size={18} color={colors.primary} />}

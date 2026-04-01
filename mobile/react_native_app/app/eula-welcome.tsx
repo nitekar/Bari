@@ -5,27 +5,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography, shadows } from '../src/shared/theme';
 import { Button, Logo } from '../src/shared/components';
 import { useStore } from '../src/store/useStore';
-
-const SECTIONS = [
-  {
-    icon: 'shield-checkmark-outline' as const,
-    title: 'Data Privacy & Local Storage',
-    body: 'We value your privacy. When using Guest mode, all anemia screening data remains locally on your device. When signed in, data is securely stored. We ensure all personal health information is handled under strict data protection standards.',
-  },
-  {
-    icon: 'medical-outline' as const,
-    title: 'Not Medical Advice',
-    body: 'Bari AI is designed to assist in screening for anemia risk levels. It does not provide medical diagnoses, treatment, or replace professional clinical judgment. Always consult a qualified healthcare provider for medical concerns.',
-  },
-  {
-    icon: 'document-text-outline' as const,
-    title: 'Terms of Service',
-    body: 'By accepting, you agree to our full End User License Agreement (EULA). You confirm that any images taken are done so with consent, and that you will use this app responsibly for intended health-support purposes only.',
-  },
-];
+import { useTranslation } from '../src/i18n';
 
 export default function EulaWelcomeScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const setHasAcceptedEula = useStore((s) => s.setHasAcceptedEula);
   const setUserId = useStore((s) => s.setUserId);
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
@@ -44,12 +28,12 @@ export default function EulaWelcomeScreen() {
 
   const handleDecline = () => {
     Alert.alert(
-      'Consent Required',
-      'You must consent to the End User License Agreement & Privacy Policy to use the health features of this app.',
+      t.eula.consentRequired,
+      t.eula.consentMsg,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.eula.cancel, style: 'cancel' },
         { 
-          text: 'Exit to Sign In', 
+          text: t.eula.exitToSignIn, 
           style: 'destructive',
           onPress: () => {
             setUserId(null); // Clear session if any
@@ -66,8 +50,8 @@ export default function EulaWelcomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Logo size="md" horizontal={false} showText={false} />
-          <Text style={styles.title}>Welcome to Bari</Text>
-          <Text style={styles.subtitle}>Before you begin, please review our terms.</Text>
+          <Text style={styles.title}>{t.eula.title}</Text>
+          <Text style={styles.subtitle}>{t.eula.subtitle}</Text>
         </View>
 
         {/* Scrollable Terms */}
@@ -78,7 +62,24 @@ export default function EulaWelcomeScreen() {
           onScroll={handleScroll}
           scrollEventThrottle={400}
         >
-          {SECTIONS.map((sec, idx) => (
+          {/* Sections mapping without global SECTIONS const */}
+          {[
+            {
+              icon: 'shield-checkmark-outline' as const,
+              title: t.eula.section1Title,
+              body: t.eula.section1Body,
+            },
+            {
+              icon: 'medical-outline' as const,
+              title: t.eula.section2Title,
+              body: t.eula.section2Body,
+            },
+            {
+              icon: 'document-text-outline' as const,
+              title: t.eula.section3Title,
+              body: t.eula.section3Body,
+            },
+          ].map((sec, idx) => (
             <View key={idx} style={styles.card}>
               <View style={styles.cardHeader}>
                 <View style={styles.iconBox}>
@@ -91,21 +92,21 @@ export default function EulaWelcomeScreen() {
           ))}
           <View style={{ height: 20 }} />
           <Text style={styles.readMoreAlert}>
-            End of Document. Scroll to enable acceptance.
+            {t.eula.endOfDoc}
           </Text>
         </ScrollView>
 
         {/* Action Buttons */}
         <View style={styles.footer}>
           <Button
-            title="I Accept & Continue"
+            title={t.eula.acceptBtn}
             onPress={handleAccept}
             variant="primary"
             disabled={!scrolledToBottom}
             icon={<Ionicons name="checkmark-circle-outline" size={20} color={scrolledToBottom ? colors.white : colors.textLight} />}
           />
           <TouchableOpacity onPress={handleDecline} style={styles.declineBtn}>
-            <Text style={styles.declineText}>Decline terms</Text>
+            <Text style={styles.declineText}>{t.eula.declineBtn}</Text>
           </TouchableOpacity>
         </View>
       </View>

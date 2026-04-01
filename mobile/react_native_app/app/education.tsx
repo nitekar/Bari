@@ -11,6 +11,7 @@ import { colors, spacing, borderRadius, shadows } from '../src/shared/theme';
 import { useStore } from '../src/store/useStore';
 import { MILESTONES, BABY_ACTIVITIES, EDUCATION_CATEGORIES } from '../src/data';
 import { useTranslation } from '../src/i18n';
+import { Button } from '../src/shared/components';
 
 export default function ParentEducationHub() {
   const router = useRouter();
@@ -22,6 +23,57 @@ export default function ParentEducationHub() {
   const totalCheckable = allMilestones.length + allActivities.length;
   const totalDone = [...allMilestones, ...allActivities].filter((item) => completedItems.includes(item.id)).length;
   const overallPct = totalCheckable > 0 ? Math.round((totalDone / totalCheckable) * 100) : 0;
+  const isGuest = useStore((s) => s.userId) === null;
+
+  if (isGuest) {
+    return (
+      <ScrollView style={s.scroll} contentContainerStyle={s.content}>
+        {/* Context about Bari */}
+        <View style={s.hero}>
+          <View style={s.heroDecor1} />
+          <View style={s.heroDecor2} />
+          <Text style={s.heroEmoji}>💡</Text>
+          <Text style={s.heroTitle}>{t.guestEducation.title}</Text>
+          <Text style={s.heroSub}>{t.guestEducation.subtitle}</Text>
+        </View>
+
+        <View style={s.tipCard}>
+          <View style={s.tipHeader}>
+            <Ionicons name="information-circle-outline" size={20} color={colors.primaryDark} />
+            <Text style={s.tipTitle}>{t.guestEducation.whatIsBari}</Text>
+          </View>
+          <Text style={s.tipText}>
+            {t.guestEducation.whatIsBariBody}
+          </Text>
+        </View>
+
+        {/* Learn Points */}
+        <View style={[s.tipCard, { backgroundColor: colors.surface, marginTop: spacing.md }]}>
+          <View style={s.tipHeader}>
+            <Ionicons name="book-outline" size={20} color={colors.secondary} />
+            <Text style={s.tipTitle}>{t.guestEducation.whyNutrition}</Text>
+          </View>
+          <Text style={[s.tipText, { marginBottom: 8 }]}>• {t.guestEducation.point1}</Text>
+          <Text style={[s.tipText, { marginBottom: 8 }]}>• {t.guestEducation.point2}</Text>
+          <Text style={[s.tipText, { marginBottom: 8 }]}>• {t.guestEducation.point3}</Text>
+        </View>
+
+        {/* Call to Action */}
+        <View style={{ marginTop: spacing.xl, paddingHorizontal: spacing.md }}>
+          <Text style={{ textAlign: 'center', color: colors.textSecondary, marginBottom: spacing.md, lineHeight: 22 }}>
+            {t.guestEducation.ctaBody}
+          </Text>
+          <Button
+            title={t.guestEducation.getStarted}
+            onPress={() => router.push('/auth')}
+            variant="primary"
+            icon={<Ionicons name="person-add-outline" size={20} color={colors.white} />}
+          />
+        </View>
+        <View style={{ height: 100 }} />
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView style={s.scroll} contentContainerStyle={s.content}>

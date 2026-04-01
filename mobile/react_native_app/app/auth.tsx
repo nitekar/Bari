@@ -11,6 +11,7 @@ import {
   Platform,
   TouchableOpacity,
 } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../src/shared/theme';
@@ -113,6 +114,7 @@ export default function AuthScreen() {
   const params = useLocalSearchParams<{ mode?: string }>();
   const { t } = useTranslation();
   const setUserId = useStore((s) => s.setUserId);
+  const hasAcceptedEula = useStore((s) => s.hasAcceptedEula);
 
   const [mode, setMode] = useState<AuthMode>('signin');
   const [email, setEmail] = useState('');
@@ -122,6 +124,23 @@ export default function AuthScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // Load saved credentials
+  useEffect(() => {
+    SecureStore.getItemAsync('bari_credentials').then((res) => {
+      if (res) {
+        try {
+          const creds = JSON.parse(res);
+          if (creds.email && creds.password) {
+            setEmail(creds.email);
+            setPassword(creds.password);
+            setRememberMe(true);
+          }
+        } catch (e) {}
+      }
+    });
+  }, []);
 
   // Deep-link: anemia-screening://reset-password?mode=newpassword
   useEffect(() => {
@@ -188,10 +207,20 @@ export default function AuthScreen() {
     setIsLoading(true);
     try {
       if (mode === 'signup') {
+        if (rememberMe) {
+          SecureStore.setItemAsync('bari_credentials', JSON.stringify({ email: email.trim(), password })).catch(() => {});
+        } else {
+          SecureStore.deleteItemAsync('bari_credentials').catch(() => {});
+        }
         await signUpWithRole(email.trim(), password, selectedRole);
         setSuccessMessage(t.auth.confirmEmail);
         switchMode('signin');
       } else {
+        if (rememberMe) {
+          SecureStore.setItemAsync('bari_credentials', JSON.stringify({ email: email.trim(), password })).catch(() => {});
+        } else {
+          SecureStore.deleteItemAsync('bari_credentials').catch(() => {});
+        }
         await signIn(email.trim(), password);
         // Auth state listener in _layout.tsx navigates based on role
       }
@@ -204,8 +233,12 @@ export default function AuthScreen() {
 
   // Guest mode
   const handleContinueAsGuest = () => {
-    setUserId(null);
-    router.replace('/');
+    setUserId(null); // Triggers layout interceptor correctly for guest identity
+    if (!hasAcceptedEula) {
+      router.replace('/eula-welcome');
+    } else {
+      router.replace('/');
+    }
   };
 
   // ── Derived display ──────────────────────────────────────────────────────
@@ -311,12 +344,24 @@ export default function AuthScreen() {
 
             {/* Forgot password link — only signin */}
             {mode === 'signin' && (
-              <TouchableOpacity
-                onPress={() => switchMode('forgot')}
-                style={styles.forgotBtn}
-              >
-                <Text style={styles.forgotText}>Forgot password?</Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: -spacing.xs, marginBottom: spacing.sm }}>
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 4 }}
+                  onPress={() => setRememberMe(!rememberMe)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name={rememberMe ? 'checkbox' : 'square-outline'}
+                    size={20}
+                    color={rememberMe ? colors.primaryDark : colors.border}
+                  />
+                  <Text style={{ marginLeft: 8, fontSize: 13, color: colors.textSecondary }}>Remember me</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => switchMode('forgot')}>
+                  <Text style={styles.forgotText}>Forgot password?</Text>
+                </TouchableOpacity>
+              </View>
             )}
 
             {error && <ErrorMessage message={error} />}

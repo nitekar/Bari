@@ -40,19 +40,23 @@ alter table screenings enable row level security;
 alter table analytics_events enable row level security;
 
 -- Screenings policies
+drop policy if exists "Users see own screenings" on screenings;
 create policy "Users see own screenings"
   on screenings for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users insert own screenings" on screenings;
 create policy "Users insert own screenings"
   on screenings for insert
   with check (auth.uid() = user_id);
 
 -- Analytics events policies
+drop policy if exists "Users see own events" on analytics_events;
 create policy "Users see own events"
   on analytics_events for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users insert own events" on analytics_events;
 create policy "Users insert own events"
   on analytics_events for insert
   with check (auth.uid() = user_id);
@@ -64,6 +68,7 @@ insert into storage.buckets (id, name, public)
   on conflict (id) do nothing;
 
 -- Storage policies (images scoped by user_id folder)
+drop policy if exists "Users upload own images" on storage.objects;
 create policy "Users upload own images"
   on storage.objects for insert
   with check (
@@ -71,6 +76,7 @@ create policy "Users upload own images"
     and auth.uid()::text = (storage.foldername(name))[1]
   );
 
+drop policy if exists "Users view own images" on storage.objects;
 create policy "Users view own images"
   on storage.objects for select
   using (
@@ -121,15 +127,18 @@ create trigger on_auth_user_created
   for each row execute procedure public.handle_new_user();
 
 -- RLS policies for profiles
+drop policy if exists "Users can view own profile" on profiles;
 create policy "Users can view own profile"
   on profiles for select
   using (auth.uid() = id);
 
+drop policy if exists "Users can update own profile" on profiles;
 create policy "Users can update own profile"
   on profiles for update
   using (auth.uid() = id);
 
 -- Admins can view all profiles
+drop policy if exists "Admins view all profiles" on profiles;
 create policy "Admins view all profiles"
   on profiles for select
   using (
@@ -153,14 +162,17 @@ create table if not exists children (
 
 alter table children enable row level security;
 
+drop policy if exists "Parents see own children" on children;
 create policy "Parents see own children"
   on children for select
   using (auth.uid() = parent_id);
 
+drop policy if exists "Parents insert own children" on children;
 create policy "Parents insert own children"
   on children for insert
   with check (auth.uid() = parent_id);
 
+drop policy if exists "Parents update own children" on children;
 create policy "Parents update own children"
   on children for update
   using (auth.uid() = parent_id);
@@ -180,10 +192,12 @@ create table if not exists sleep_logs (
 
 alter table sleep_logs enable row level security;
 
+drop policy if exists "Users see own sleep logs" on sleep_logs;
 create policy "Users see own sleep logs"
   on sleep_logs for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users insert own sleep logs" on sleep_logs;
 create policy "Users insert own sleep logs"
   on sleep_logs for insert
   with check (auth.uid() = user_id);
@@ -203,10 +217,12 @@ create table if not exists feeding_logs (
 
 alter table feeding_logs enable row level security;
 
+drop policy if exists "Users see own feeding logs" on feeding_logs;
 create policy "Users see own feeding logs"
   on feeding_logs for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users insert own feeding logs" on feeding_logs;
 create policy "Users insert own feeding logs"
   on feeding_logs for insert
   with check (auth.uid() = user_id);

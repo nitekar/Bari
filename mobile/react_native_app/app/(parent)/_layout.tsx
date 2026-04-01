@@ -39,7 +39,7 @@ export default function ParentLayout() {
       <Tabs.Screen name="index"     options={{ href: isGuest ? null : undefined, title: 'Home', headerShown: false, tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} /> }} />
       <Tabs.Screen name="baby"      options={{ href: isGuest ? null : undefined, title: 'Baby', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'heart' : 'heart-outline'} size={22} color={color} /> }} />
       <Tabs.Screen name="results"   options={{ href: isGuest ? null : undefined, title: 'Results', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'pulse' : 'pulse-outline'} size={22} color={color} /> }} />
-      <Tabs.Screen name="education" options={{ href: null, title: 'Learn', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'book' : 'book-outline'} size={22} color={color} /> }} />
+      <Tabs.Screen name="education" options={{ title: 'Learn', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'book' : 'book-outline'} size={22} color={color} /> }} />
       <Tabs.Screen name="profile"   options={{ title: 'Profile', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'person' : 'person-outline'} size={22} color={color} /> }} />
     </Tabs>
   );

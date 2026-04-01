@@ -11,7 +11,7 @@
  *  - Branded loading splash
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { Alert, View, Text, StyleSheet, Animated } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -32,17 +32,68 @@ import { useTranslation } from '../src/i18n';
 export { default as ErrorBoundary } from '../src/shared/components/ErrorBoundary';
 
 // ── Branded loading splash ───────────────────────────────────────────────────
-function LoadingSplash() {
+function LoadingSplash({ onFinish }: { onFinish: () => void }) {
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const spinAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Pulse animation for baby
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(scaleAnim, { toValue: 1.1, duration: 800, useNativeDriver: true }),
+        Animated.timing(scaleAnim, { toValue: 0.8, duration: 800, useNativeDriver: true }),
+      ])
+    ).start();
+
+    // Spin animation for the outer ring
+    Animated.loop(
+      Animated.timing(spinAnim, { toValue: 1, duration: 4000, useNativeDriver: true })
+    ).start();
+
+    // Fade in text
+    Animated.timing(fadeAnim, { toValue: 1, duration: 1000, useNativeDriver: true }).start();
+
+    // Automatically complete splash after 2.2 seconds minimum
+    setTimeout(onFinish, 2200);
+  }, []);
+
+  const spinCW = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  const spinCCW = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['360deg', '0deg'] });
+
   return (
     <View style={splashStyles.container}>
-      <Text style={splashStyles.logo}>🩺</Text>
-      <Text style={splashStyles.title}>Bari Anemia</Text>
-      <Text style={splashStyles.subtitle}>Loading…</Text>
-      <ActivityIndicator
-        size="small"
-        color={colors.primary}
-        style={splashStyles.spinner}
-      />
+      <View style={{ alignItems: 'center', justifyContent: 'center', height: 160 }}>
+        {/* CW Dashed Ring */}
+        <Animated.View
+          style={{
+            position: 'absolute',
+            width: 140, height: 140, borderRadius: 70,
+            borderWidth: 4, borderColor: colors.primary,
+            borderStyle: 'dashed', opacity: 0.35,
+            transform: [{ rotate: spinCW }],
+          }}
+        />
+        {/* CCW Solid Ring */}
+        <Animated.View
+          style={{
+            position: 'absolute',
+            width: 160, height: 160, borderRadius: 80,
+            borderWidth: 2, borderColor: colors.secondary,
+            opacity: 0.2,
+            transform: [{ rotate: spinCCW }],
+          }}
+        />
+        {/* Pulsing Baby */}
+        <Animated.Text style={{ fontSize: 64, transform: [{ scale: scaleAnim }] }}>
+          👶🏽
+        </Animated.Text>
+      </View>
+      
+      <Animated.View style={{ opacity: fadeAnim, alignItems: 'center', marginTop: 24 }}>
+        <Text style={splashStyles.title}>Bari</Text>
+        <Text style={splashStyles.subtitle}>Loading your assistant...</Text>
+      </Animated.View>
     </View>
   );
 }
@@ -73,7 +124,9 @@ export default function RootLayout() {
   const { t } = useTranslation();
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRoleLocal] = useState<UserRole | null>(null);
-  const [isReady, setIsReady] = useState(false);
+  const [isDataReady, setIsDataReady] = useState(false);
+  const [isSplashDone, setIsSplashDone] = useState(false);
+  const isReady = isDataReady && isSplashDone;
   const router = useRouter();
   const segments = useSegments();
   const setUserId = useStore((s) => s.setUserId);
@@ -89,7 +142,11 @@ export default function RootLayout() {
 
   // ── Bootstrap: check existing session ──────────────────────────────────────
   useEffect(() => {
-    if (!isSupabaseConfigured) { setIsReady(true); return; }
+    if (!isSupabaseConfigured) {
+      setIsDataReady(true);
+      return;
+    }
+
     getSession().then(async (s) => {
       setSession(s);
       if (s?.user) {
@@ -100,7 +157,7 @@ export default function RootLayout() {
         setRoleLocal(r);
         setRole(r);
       }
-      setIsReady(true);
+      setIsDataReady(true);
     });
   }, []);
 
@@ -181,8 +238,8 @@ export default function RootLayout() {
     if (!hasSeenOnboarding && !onBoarding) { router.replace('/onboarding'); return; }
 
     if (hasSeenOnboarding) {
-      // 1. EULA Interceptor for Guests (!session) and Parents
-      const needsEula = !hasAcceptedEula && (!session || role === 'parent');
+      // 1. EULA Interceptor for All Users
+      const needsEula = !hasAcceptedEula;
       if (needsEula && !onAuth && !onBoarding && !onEula) {
         router.replace('/eula-welcome');
         return;
@@ -196,6 +253,8 @@ export default function RootLayout() {
       }
       if (session && role && !onEula) {
         if (onAuth) {
+          if (needsEula) { router.replace('/eula-welcome'); return; }
+          
           if (role === 'admin')  { router.replace('/(admin)'); return; }
           if (role === 'parent') { router.replace('/(parent)'); return; }
           router.replace('/(chw)'); return;
@@ -212,7 +271,7 @@ export default function RootLayout() {
     }
   }, [session, role, segments, isReady, hasSeenOnboarding, hasAcceptedEula]);
 
-  if (!isReady) return <LoadingSplash />;
+  if (!isReady) return <LoadingSplash onFinish={() => setIsSplashDone(true)} />;
 
   return (
     <AppErrorBoundary>

@@ -84,6 +84,25 @@ export default function SettingsScreen() {
           <Text style={styles.descText}>{t.settings.description}</Text>
         </View>
       </Card>
+
+      {/* ── Developer Tools ── */}
+      <Text style={[styles.sectionTitle, { marginTop: spacing.xl, color: colors.error }]}>Developer Tools</Text>
+      <Text style={styles.sectionSub}>Warning: these actions affect your app state</Text>
+      <Card style={{ marginBottom: spacing.lg }}>
+        <TouchableOpacity
+          style={styles.langRow}
+          onPress={() => {
+            useStore.getState().setHasAcceptedEula(false);
+            useStore.getState().setHasSeenOnboarding(false);
+            useStore.getState().setUserId(null); // sign out guest
+            alert("App State Reset! Please reload your app to test EULA & Onboarding.");
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="trash-bin-outline" size={22} color={colors.error} />
+          <Text style={[styles.langLabel, { color: colors.error }]}>Reset All Local State (EULA, Onboarding, Guest Auth)</Text>
+        </TouchableOpacity>
+      </Card>
     </ScrollView>
   );
 }

@@ -64,9 +64,11 @@ def _run_tflite(
         shape = det["shape"]
         # Match by dimensionality: 4-D tensor is image, 2-D is tabular
         if len(shape) == 4:
-            arr = inputs.get("image") or next(v for v in inputs.values() if v.ndim == 4)
+            _img = inputs.get("image")
+            arr = _img if _img is not None else next(v for v in inputs.values() if v.ndim == 4)
         else:
-            arr = inputs.get("tab") or next(v for v in inputs.values() if v.ndim == 2)
+            _tab = inputs.get("tab")
+            arr = _tab if _tab is not None else next(v for v in inputs.values() if v.ndim == 2)
         interpreter.set_tensor(det["index"], arr.astype(dtype))
 
     interpreter.invoke()

@@ -113,6 +113,17 @@ _reg: dict[str, Any] = {
 async def lifespan(app: FastAPI):
     logger.info("Starting up — loading models …")
 
+    # ── Startup env / path audit ──────────────────────────────────────────
+    logger.info("=== Environment / path audit ===")
+    for env_var in ("API_KEY", "CORS_ORIGINS", "ALLOW_INSECURE_DEFAULT_API_KEY"):
+        val = os.environ.get(env_var)
+        logger.info("  %s = %s", env_var, "<set>" if val else "<not set>")
+    for label, path in MODEL_PATHS.items():
+        exists = os.path.exists(path)
+        logger.info("  %-30s %s  (%s)", label, "[FOUND]" if exists else "[MISSING]", path)
+    logger.info("=================================")
+
+
     # Severity classifier bundle + scaler + Hb stats
     path = MODEL_PATHS["severity_bundle"]
     _EXPECTED_FEATURES = 17  # FEAT_WITH_HB length

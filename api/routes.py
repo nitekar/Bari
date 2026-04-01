@@ -11,9 +11,11 @@ import logging
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 
+from app.schemas.response import HealthResponse
 from app.services.inference import (
     build_probabilities_dict,
     build_visual_probabilities_dict,
+    late_fusion_weighted_average,
     predict_rf,
     predict_visual,
     predict_fusion,
@@ -31,6 +33,29 @@ from utils.nutrition import build_structured_recommendations
 
 router = APIRouter()
 logger = logging.getLogger("anemia-api")
+
+
+@router.get(
+    "/health",
+    response_model=HealthResponse,
+    tags=["System"],
+    summary="API health check — returns status and loaded model inventory",
+)
+async def health_check(request: Request) -> HealthResponse:
+    reg = getattr(request.app.state, "registry", {})
+    models_loaded = {
+        "visual":               reg.get("visual_interp") is not None,
+        "severity_classifier":  reg.get("severity_model") is not None,
+        "severity_scaler":      reg.get("severity_scaler") is not None,
+        "multimodal_with_hb":   reg.get("multimodal_with_hb_interp") is not None,
+        "multimodal_no_hb":     reg.get("multimodal_no_hb_interp") is not None,
+    }
+    all_critical = models_loaded["visual"] and models_loaded["severity_classifier"]
+    return HealthResponse(
+        status="ok" if all_critical else "degraded",
+        version="3.0.0",
+        models_loaded=models_loaded,
+    )
 
 
 @router.post(
@@ -92,33 +117,60 @@ async def predict_multimodal_endpoint(
         raise HTTPException(500, "Severity classifier inference failed.") from exc
 
     fusion_used = False
-    fusion_probs = None
+    fusion_strategy = "individual"
     try:
+        # ── Gather individual model outputs for comparison ────────────────
+        _, v_conf, v_probs, _ = predict_visual(img_arr, reg.get("visual_interp"), hb_mean, hb_std)
+        _, rf_conf, rf_probs = predict_rf(tab_wh_scaled, reg.get("severity_model"))
+        logger.debug("Visual top-conf=%.4f  RF top-conf=%.4f", v_conf, rf_conf)
+
+        # ── Tier 1: TFLite end-to-end fusion model ────────────────────────
         mm_key = "multimodal_with_hb_interp" if (hb_level is not None) else "multimodal_no_hb_interp"
         mm_interp = reg.get(mm_key)
         if mm_interp is not None:
             tab_for_mm = adapt_tab_array_for_interpreter(mm_interp, tab_wh_scaled)
             f_pred_idx, f_conf, f_probs, f_hb = predict_fusion(img_arr, tab_for_mm, mm_interp, hb_mean, hb_std)
-            fusion_used = True
-            fusion_probs = f_probs
-            try:
-                _, v_conf, v_probs, _ = predict_visual(img_arr, reg.get("visual_interp"), hb_mean, hb_std)
-                _, _, tab_probs = predict_rf(tab_wh_scaled, reg.get("severity_model"))
-                comp = compare_fusion_vs_individuals(fusion_probs, v_probs, tab_probs)
-                if comp.get("verdict") == "no_benefit":
-                    fusion_used = False
-                else:
-                    pred_idx = f_pred_idx
-                    conf = f_conf
-                    probs = f_probs
-                    hb_gdl = f_hb or hb_gdl
-            except Exception:
-                pred_idx = f_pred_idx
-                conf = f_conf
-                probs = f_probs
+            logger.debug("TFLite fusion top-conf=%.4f  pred=%d", f_conf, f_pred_idx)
+            comp = compare_fusion_vs_individuals(f_probs, v_probs, rf_probs)
+            logger.info(
+                "Fusion comparison — verdict=%s  fusion=%.4f  visual=%.4f  tab=%.4f",
+                comp["verdict"], comp["fusion_top"], comp["visual_top"], comp["tab_top"],
+            )
+            if comp.get("verdict") == "fusion_benefit":
+                pred_idx, conf, probs = f_pred_idx, f_conf, f_probs
                 hb_gdl = f_hb or hb_gdl
+                fusion_used = True
+                fusion_strategy = "tflite_fusion"
+
+        # ── Tier 2: late weighted average (visual 70 % / tabular 30 %) ───
+        # Runs when TFLite fusion is unavailable or shows no benefit.
+        # Maps 2-class visual probs to 4-class space before averaging.
+        if not fusion_used:
+            # visual_probs is binary (2 classes); pad to 4-class to match tab
+            import numpy as _np
+            v4 = _np.zeros(4, dtype="float32")
+            # index 0 = Non-Anemic (binary 0), index 1+ share the anemic mass
+            v4[0] = float(v_probs[0])
+            v4[1:] = float(v_probs[1]) / 3.0  # spread anemic mass equally
+            wa_pred, wa_conf, wa_probs = late_fusion_weighted_average(v4, rf_probs, w_visual=0.7, w_tab=0.3)
+            logger.debug("Weighted-avg fusion top-conf=%.4f  pred=%d", wa_conf, wa_pred)
+            wa_comp = compare_fusion_vs_individuals(wa_probs, v4, rf_probs)
+            if wa_comp.get("verdict") == "fusion_benefit":
+                pred_idx, conf, probs = wa_pred, wa_conf, wa_probs
+                fusion_used = True
+                fusion_strategy = "weighted_average"
+                logger.info("Using weighted-average fusion (visual=0.7 / tabular=0.3)")
+            else:
+                # Tier 3: best individual model — pick whichever is more confident
+                if rf_conf >= v_conf:
+                    fusion_strategy = "individual_rf"
+                    logger.info("Fusion skipped — using RF prediction (conf=%.4f)", rf_conf)
+                else:
+                    fusion_strategy = "individual_visual_mapped"
+                    logger.info("Fusion skipped — using visual-mapped prediction (conf=%.4f)", v_conf)
+
     except Exception as exc:
-        logger.warning(f"Fusion attempt failed: {exc}")
+        logger.warning("Fusion block failed (%s) — using baseline RF prediction", exc)
 
     from app.services.inference import CLASS_NAMES  # local import to avoid cycles
 
@@ -137,6 +189,7 @@ async def predict_multimodal_endpoint(
         "recommended_foods": guide["foods"],
         "referral_action": guide["referral"],
         "recommendations": rec["recommendations"],
+        "fusion_strategy": fusion_strategy,
     }
 
 

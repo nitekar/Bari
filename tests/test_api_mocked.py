@@ -42,7 +42,20 @@ class DummySeverityModel:
 
 
 def test_predict_image_and_multimodal(monkeypatch):
-    client = TestClient(app)
+    # Seed the registry BEFORE the lifespan runs so endpoints can find models.
+    # TestClient triggers lifespan on __enter__; pre-populating state ensures
+    # our mocks survive the startup sequence.
+    mock_reg = {
+        'visual_interp':         DummyInterp({'probs': np.array([0.2, 0.8]), 'hb': 0.5}),
+        'severity_model':        DummySeverityModel(),
+        'severity_scaler':       None,
+        'feature_probe_scaler':  None,
+        'multimodal_with_hb_interp': None,
+        'multimodal_no_hb_interp':   None,
+        'hb_mean':               10.0,
+        'hb_std':                2.0,
+    }
+    app.state.registry = mock_reg
 
     # Mock preprocess to return a valid image array and a dummy PIL image
     def fake_preprocess_image_bytes(raw_bytes):
@@ -62,22 +75,14 @@ def test_predict_image_and_multimodal(monkeypatch):
     monkeypatch.setattr('app.services.preprocessing.build_nh_scaled', fake_build_nh_scaled)
     monkeypatch.setattr('app.services.preprocessing.build_wh_scaled', fake_build_wh_scaled)
 
-    # Prepare registry with dummy models
-    reg = app.state.registry
-    reg['visual_interp'] = DummyInterp({'probs': np.array([0.2, 0.8]), 'hb': 0.5})
-    reg['severity_model'] = DummySeverityModel()
-    reg['severity_scaler'] = None
-    reg['feature_probe_scaler'] = None
-    reg['hb_mean'] = 10.0
-    reg['hb_std'] = 2.0
+    data = {'file': ('test.png', io.BytesIO(b'PNGDATA'), 'image/png')}
 
-    # Test /predict/image
-    data = {
-        'file': ('test.png', io.BytesIO(b'PNGDATA'), 'image/png')
-    }
-    r = client.post('/predict/image', files=data, headers={'X-API-Key': ''})
-    assert r.status_code in (200, 503)  # either works or model may be reported missing in some configs
+    with TestClient(app) as client:
+        # After lifespan, restore our mocks (lifespan may overwrite registry)
+        app.state.registry = mock_reg
 
-    # Test /predict/multimodal
-    r2 = client.post('/predict/multimodal', files=data, data={'age': '24', 'gender': '1'}, headers={'X-API-Key': ''})
-    assert r2.status_code in (200, 503)
+        r = client.post('/predict/image', files=data, headers={'X-API-Key': ''})
+        assert r.status_code in (200, 503)
+
+        r2 = client.post('/predict/multimodal', files=data, data={'age': '24', 'gender': '1'}, headers={'X-API-Key': ''})
+        assert r2.status_code in (200, 503)

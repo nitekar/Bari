@@ -1,38 +1,42 @@
 {
   "expo": {
     "name": "Anemia Screening",
-    "slug": "anemia-screening-app",
+    "slug": "anemia-screening",
     "version": "2.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "scheme": "anemia-screening",
+    "icon": "./assets/icon.png",
     "splash": {
-      "backgroundColor": "#FAFAFA"
+      "backgroundColor": "#FFF5F0",
+      "resizeMode": "contain"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bari.anemiscreening",
+      "bundleIdentifier": "com.bari.anemiascreening",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "We need access to your photo library to select conjunctiva images for anemia screening.",
-        "NSCameraUsageDescription": "We need camera access to capture conjunctiva images for anemia screening."
+        "NSPhotoLibraryUsageDescription": "This app accesses your photo library to select conjunctiva images for anemia screening.",
+        "NSCameraUsageDescription": "This app uses the camera to photograph conjunctiva for anemia screening."
       }
     },
     "android": {
-      "package": "com.bari.anemiscreening",
+      "package": "com.bari.anemiascreening",
       "adaptiveIcon": {
-        "backgroundColor": "#FAFAFA"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFF5F0"
       },
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.INTERNET"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
       "bundler": "metro",
-      "output": "single"
+      "favicon": "./assets/favicon.png"
     },
     "platforms": [
       "ios",
@@ -40,25 +44,25 @@
       "web"
     ],
     "plugins": [
-      "expo-asset",
       "expo-router",
+      "expo-secure-store",
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Anemia Screening to access your photos for conjunctiva image analysis.",
-          "cameraPermission": "Allow Anemia Screening to use the camera to capture conjunctiva images."
+          "photosPermission": "Allow access to select conjunctiva images for screening.",
+          "cameraPermission": "Allow camera access to photograph conjunctiva for screening."
         }
       ]
     ],
     "extra": {
       "router": {},
-      "supabaseUrl": "https://clmvkxgmpytgztthrdmk.supabase.co",
-      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsbXZreGdtcHl0Z3p0dGhyZG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjI0OTUsImV4cCI6MjA4OTczODQ5NX0.1yr3LnYUnqlh6yahH0a7odjaPugRkiXMPZ_81yp4fiw",
-      "apiBaseUrl": "https://web-production-c7c1.up.railway.app",
       "eas": {
         "projectId": "25e00d49-367f-4807-8d33-6c6e8db1d66b"
       }
     },
-    "owner": "niteka"
+    "owner": "niteka",
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }

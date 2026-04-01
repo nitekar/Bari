@@ -34,6 +34,14 @@ const mockResponses: Record<string, PredictionResponse> = {
     ],
     referral_action:
       'No immediate medical referral needed. Continue routine check-ups.',
+    risk_level: 'low',
+    confidence_score: 0.92,
+    recommendations: {
+      diet_plan: 'Maintain a balanced diet with regular iron-rich foods. Include haem iron (meat) 2-3 times per week and plant iron every day.',
+      foods_to_include: ['Liver', 'Red meat', 'Beans and lentils', 'Spinach', 'Citrus fruits (oranges, lemons)', 'Tomatoes'],
+      foods_to_avoid: ['Tea during or 1 hour around iron-rich meals', 'Coffee during or 1 hour around iron-rich meals', 'Calcium-heavy foods at the same time as iron supplements'],
+      urgency_level: 'routine',
+    },
   },
   mild: {
     prediction: 'Mild',
@@ -58,6 +66,14 @@ const mockResponses: Record<string, PredictionResponse> = {
     ],
     referral_action:
       'Consider scheduling a visit with your healthcare provider for a blood test. Monitor symptoms.',
+    risk_level: 'low',
+    confidence_score: 0.78,
+    recommendations: {
+      diet_plan: 'Maintain a balanced diet with regular iron-rich foods. Include haem iron (meat) 2-3 times per week and plant iron every day.',
+      foods_to_include: ['Liver', 'Red meat', 'Beans and lentils', 'Spinach', 'Citrus fruits (oranges, lemons)', 'Tomatoes'],
+      foods_to_avoid: ['Tea during or 1 hour around iron-rich meals', 'Coffee during or 1 hour around iron-rich meals', 'Calcium-heavy foods at the same time as iron supplements'],
+      urgency_level: 'routine',
+    },
   },
   moderate: {
     prediction: 'Moderate',
@@ -83,6 +99,14 @@ const mockResponses: Record<string, PredictionResponse> = {
     ],
     referral_action:
       'Medical referral recommended. Please see a healthcare provider promptly for blood work and possible iron supplementation.',
+    risk_level: 'moderate',
+    confidence_score: 0.84,
+    recommendations: {
+      diet_plan: 'Increase iron intake in every main meal and add vitamin C sources to boost absorption. Monitor the child and schedule a medical check within 4 weeks.',
+      foods_to_include: ['Liver', 'Red meat', 'Beans and lentils', 'Spinach', 'Citrus fruits (oranges, lemons)', 'Tomatoes', 'Fortified cereals', 'Eggs'],
+      foods_to_avoid: ['Tea during or 1 hour around iron-rich meals', 'Coffee during or 1 hour around iron-rich meals', 'Calcium-heavy foods at the same time as iron supplements'],
+      urgency_level: 'elevated',
+    },
   },
   severe: {
     prediction: 'Severe',
@@ -94,7 +118,7 @@ const mockResponses: Record<string, PredictionResponse> = {
       Severe: 0.91,
     },
     nutrition:
-      'Severe anemia detected. Seek medical attention immediately. Dietary changes alone are insufficient — you likely need medical intervention.',
+      'Severe anemia detected. Seek medical attention immediately. Dietary changes alone are insufficient -- you likely need medical intervention.',
     recommended_foods: [
       'Liver and organ meats',
       'Red meat',
@@ -105,6 +129,14 @@ const mockResponses: Record<string, PredictionResponse> = {
     ],
     referral_action:
       'URGENT: Immediate medical attention required. Severe anemia can be life-threatening. Visit the nearest health facility or call +250 800 22 333.',
+    risk_level: 'high',
+    confidence_score: 0.91,
+    recommendations: {
+      diet_plan: 'URGENT: strong dietary intervention plus immediate referral. Diet alone is not sufficient -- clinical assessment is required.',
+      foods_to_include: ['Liver', 'Red meat', 'Beans and lentils', 'Spinach', 'Citrus fruits (oranges, lemons)', 'Tomatoes', 'Fortified cereals', 'Eggs'],
+      foods_to_avoid: ['Tea during or 1 hour around iron-rich meals', 'Coffee during or 1 hour around iron-rich meals', 'Calcium-heavy foods at the same time as iron supplements'],
+      urgency_level: 'urgent',
+    },
   },
 };
 

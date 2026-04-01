@@ -137,16 +137,24 @@ create policy "Users can update own profile"
   on profiles for update
   using (auth.uid() = id);
 
--- Admins can view all profiles
+-- Helper function that checks admin role without triggering RLS (avoids recursion)
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+stable
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin'
+  );
+$$;
+
+-- Admins can view all profiles (uses security definer fn to avoid RLS recursion)
 drop policy if exists "Admins view all profiles" on profiles;
 create policy "Admins view all profiles"
   on profiles for select
-  using (
-    exists (
-      select 1 from profiles p
-      where p.id = auth.uid() and p.role = 'admin'
-    )
-  );
+  using (auth.uid() = id or public.is_admin());
 
 -- ── Children table ────────────────────────────────────────────────────────────
 

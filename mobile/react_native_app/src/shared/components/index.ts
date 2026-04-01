@@ -8,3 +8,4 @@ export { default as GenderToggle } from './GenderToggle';
 export { default as OfflineIndicator } from './OfflineIndicator';
 export { default as Logo } from './Logo';
 export { default as ErrorBoundary } from './ErrorBoundary';
+export { default as LanguageSwitch } from './LanguageSwitch';

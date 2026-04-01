@@ -4,15 +4,19 @@
  */
 import React from 'react';
 import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, shadows } from '../../src/shared/theme';
-import { Card } from '../../src/shared/components';
+import { Card, Button } from '../../src/shared/components';
 import { useStore } from '../../src/store/useStore';
+import { signOut } from '../../src/services/supabaseAuth';
 
 const MODEL_VERSION = 'BariNet v2.1';
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const history = useStore((s) => s.history);
+  const setUserId = useStore((s) => s.setUserId);
 
   const total = history.length;
   const severeCount = history.filter(r => r.prediction === 'Severe').length;
@@ -60,6 +64,18 @@ export default function AdminDashboard() {
         </>
       )}
 
+      <View style={styles.logoutContainer}>
+        <Button
+          title="Sign Out"
+          onPress={async () => {
+            await signOut();
+            setUserId(null);
+          }}
+          variant="outline"
+          icon={<Ionicons name="log-out-outline" size={20} color={colors.error} />}
+        />
+      </View>
+
       <View style={{ height: 100 }} />
     </ScrollView>
   );
@@ -100,4 +116,5 @@ const styles = StyleSheet.create({
   activityName: { fontSize: 14, fontWeight: '600', color: colors.text },
   activitySub: { fontSize: 11, color: colors.textSecondary },
   conf: { fontSize: 12, color: colors.textLight },
+  logoutContainer: { marginTop: spacing.xl, paddingHorizontal: spacing.xl },
 });

@@ -145,12 +145,15 @@ export default function ParentProfileScreen() {
       )}
 
       {!userId && isSupabaseConfigured && (
-        <Button
-          title={t.profile.signIn}
-          onPress={() => router.push('/auth')}
-          variant="primary"
-          icon={<Ionicons name="log-in-outline" size={20} color={colors.white} />}
-        />
+        <View style={styles.guestActionContainer}>
+          <Text style={styles.guestActionText}>Register to save records, track development, and get personalized guidance.</Text>
+          <Button
+            title="Get Started"
+            onPress={() => router.push('/auth')}
+            variant="primary"
+            icon={<Ionicons name="sparkles-outline" size={20} color={colors.white} />}
+          />
+        </View>
       )}
 
       {/* ── Legal ── */}
@@ -209,4 +212,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   legalText: { flex: 1, fontSize: 14, fontWeight: '500', color: colors.text },
+  guestActionContainer: { marginTop: spacing.md, paddingVertical: spacing.md },
+  guestActionText: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.md, lineHeight: 20 },
 });

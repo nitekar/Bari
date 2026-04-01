@@ -3,7 +3,8 @@ import { Tabs } from 'expo-router';
 import { Platform, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../src/shared/theme/colors';
-import { Logo } from '../../src/shared/components';
+import { Logo, LanguageSwitch } from '../../src/shared/components';
+import { useStore } from '../../src/store/useStore';
 
 const TAB_BAR_STYLE = {
   position: 'absolute' as const,
@@ -19,6 +20,9 @@ const TAB_BAR_STYLE = {
 };
 
 export default function ParentLayout() {
+  const userId = useStore((s) => s.userId);
+  const isGuest = userId === null;
+
   return (
     <Tabs screenOptions={{
       tabBarStyle: TAB_BAR_STYLE,
@@ -30,12 +34,13 @@ export default function ParentLayout() {
       headerTintColor: colors.secondaryDark,
       headerTitleStyle: { fontWeight: '700', fontSize: 17, color: colors.text },
       headerLeft: () => <View style={{ marginLeft: 16 }}><Logo size="sm" showText /></View>,
+      headerRight: () => <LanguageSwitch />,
     }}>
-      <Tabs.Screen name="index"     options={{ title: 'Home',        headerShown: false, tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} /> }} />
-      <Tabs.Screen name="baby"      options={{ title: 'Baby',        tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'heart' : 'heart-outline'} size={22} color={color} /> }} />
-      <Tabs.Screen name="results"   options={{ title: 'Results',     tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'pulse' : 'pulse-outline'} size={22} color={color} /> }} />
-      <Tabs.Screen name="education" options={{ title: 'Learn',       tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'book' : 'book-outline'} size={22} color={color} /> }} />
-      <Tabs.Screen name="profile"   options={{ title: 'Profile',     tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'person' : 'person-outline'} size={22} color={color} /> }} />
+      <Tabs.Screen name="index"     options={{ href: isGuest ? null : undefined, title: 'Home', headerShown: false, tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} /> }} />
+      <Tabs.Screen name="baby"      options={{ href: isGuest ? null : undefined, title: 'Baby', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'heart' : 'heart-outline'} size={22} color={color} /> }} />
+      <Tabs.Screen name="results"   options={{ href: isGuest ? null : undefined, title: 'Results', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'pulse' : 'pulse-outline'} size={22} color={color} /> }} />
+      <Tabs.Screen name="education" options={{ href: null, title: 'Learn', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'book' : 'book-outline'} size={22} color={color} /> }} />
+      <Tabs.Screen name="profile"   options={{ title: 'Profile', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'person' : 'person-outline'} size={22} color={color} /> }} />
     </Tabs>
   );
 }

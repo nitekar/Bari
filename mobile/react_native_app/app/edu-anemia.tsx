@@ -6,10 +6,11 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-nati
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, shadows } from '../src/shared/theme';
-import { ANEMIA_SECTIONS } from '../src/data';
+import { useTranslation } from '../src/i18n';
 
 export default function AnemiaScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   return (
     <ScrollView style={s.scroll} contentContainerStyle={s.content}>
@@ -18,23 +19,23 @@ export default function AnemiaScreen() {
         <Text style={s.backText}>Back</Text>
       </TouchableOpacity>
 
-      <Text style={s.title}>🩸 Anemia Guide</Text>
-      <Text style={s.subtitle}>Understanding anemia in children</Text>
+      <Text style={s.title}>🩸 {t.education.anemiaGuide.title}</Text>
+      <Text style={s.subtitle}>{t.education.anemiaGuide.subtitle}</Text>
 
       <View style={s.alertCard}>
         <Ionicons name="information-circle" size={22} color={colors.error} />
         <Text style={s.alertText}>
-          Anemia is the #1 nutritional disorder in children under 5 in Africa. Early detection and iron-rich diets can prevent serious health consequences.
+          {t.education.anemiaGuide.warning}
         </Text>
       </View>
 
-      {ANEMIA_SECTIONS.map((section) => (
+      {t.education.anemiaGuide.sections.map((section: any) => (
         <View key={section.id} style={s.card}>
           <View style={s.cardHeader}>
             <Text style={s.cardEmoji}>{section.emoji}</Text>
             <Text style={s.cardTitle}>{section.title}</Text>
           </View>
-          {section.points.map((point, i) => (
+          {section.points.map((point: string, i: number) => (
             <View key={i} style={s.pointRow}>
               <View style={s.bullet} />
               <Text style={s.pointText}>{point}</Text>
@@ -45,11 +46,11 @@ export default function AnemiaScreen() {
 
       <View style={s.ctaCard}>
         <Text style={s.ctaEmoji}>📱</Text>
-        <Text style={s.ctaTitle}>Screen your child today</Text>
-        <Text style={s.ctaText}>Use Bari's AI-powered conjunctiva scan to check for anemia in under 30 seconds.</Text>
+        <Text style={s.ctaTitle}>{t.education.anemiaGuide.ctaTitle}</Text>
+        <Text style={s.ctaText}>{t.education.anemiaGuide.ctaBody}</Text>
         <TouchableOpacity style={s.ctaBtn} onPress={() => router.replace('/')}>
           <Ionicons name="medkit-outline" size={18} color={colors.white} />
-          <Text style={s.ctaBtnText}>Start Screening</Text>
+          <Text style={s.ctaBtnText}>{t.education.anemiaGuide.ctaBtn}</Text>
         </TouchableOpacity>
       </View>
       <View style={{ height: 100 }} />

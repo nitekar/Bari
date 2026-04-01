@@ -6,7 +6,7 @@ import { Tabs } from 'expo-router';
 import { Platform, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../src/shared/theme/colors';
-import { Logo } from '../../src/shared/components';
+import { Logo, LanguageSwitch } from '../../src/shared/components';
 import { useTranslation } from '../../src/i18n';
 
 export default function TabLayout() {

@@ -15,7 +15,7 @@ export default function ImageCaptureScreen() {
   const router = useRouter();
   const [localUri, setLocalUri] = useState<string | null>(null);
   const setImageUri = useStore((s) => s.setImageUri);
-  const { pickImage } = usePlatformCamera();
+  const { pickImage, takePhoto } = usePlatformCamera();
   const trackEvent = useAnalyticsStore((s) => s.trackEvent);
 
   const handlePickImage = useCallback(async () => {
@@ -24,6 +24,13 @@ export default function ImageCaptureScreen() {
       setLocalUri(uri);
     }
   }, [pickImage]);
+
+  const handleTakePhoto = useCallback(async () => {
+    const uri = await takePhoto();
+    if (uri) {
+      setLocalUri(uri);
+    }
+  }, [takePhoto]);
 
   const handleConfirm = useCallback(() => {
     if (localUri) {
@@ -98,12 +105,23 @@ export default function ImageCaptureScreen() {
             ))}
           </View>
 
-          <Button
-            title="Choose from Gallery"
-            onPress={handlePickImage}
-            variant="primary"
-            icon={<Ionicons name="images-outline" size={20} color={colors.white} />}
-          />
+          <View style={styles.buttonRow}>
+            <Button
+              title="Camera"
+              onPress={handleTakePhoto}
+              variant="primary"
+              style={styles.halfButton}
+              icon={<Ionicons name="camera-outline" size={20} color={colors.white} />}
+            />
+            <View style={{ width: spacing.md }} />
+            <Button
+              title="Gallery"
+              onPress={handlePickImage}
+              variant="outline"
+              style={styles.halfButton}
+              icon={<Ionicons name="images-outline" size={20} color={colors.primary} />}
+            />
+          </View>
         </View>
       )}
     </View>

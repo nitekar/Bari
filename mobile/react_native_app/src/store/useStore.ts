@@ -75,12 +75,15 @@ interface AppState {
   // ── App settings ──
   language: Language;
   hasSeenOnboarding: boolean;
+  hasAcceptedEula: boolean;
   setLanguage: (lang: Language) => void;
   setHasSeenOnboarding: (seen: boolean) => void;
+  setHasAcceptedEula: (accept: boolean) => void;
 
   // ── Auth ──
   userId: string | null;
   role: UserRole | null;
+  userName: string | null;
 
   // ── Child profile ──
   childName: string | null;
@@ -112,6 +115,7 @@ interface AppState {
   // ── Actions ──
   setUserId: (id: string | null) => void;
   setRole: (role: UserRole | null) => void;
+  setUserName: (name: string | null) => void;
   setChildProfile: (name: string | null, ageMonths: number | null, gender: 'male' | 'female' | null) => void;
   setResult: (data: PredictionResponse) => void;
   setImageUri: (uri: string | null) => void;
@@ -133,8 +137,10 @@ interface AppState {
 const initialState = {
   language: 'en' as Language,
   hasSeenOnboarding: false,
+  hasAcceptedEula: false,
   userId: null as string | null,
   role: null as UserRole | null,
+  userName: null as string | null,
   childName: null as string | null,
   childAgeMonths: null as number | null,
   childGender: null as 'male' | 'female' | null,
@@ -157,9 +163,11 @@ export const useStore = create<AppState>()(
 
   setLanguage: (lang) => set({ language: lang }),
   setHasSeenOnboarding: (seen) => set({ hasSeenOnboarding: seen }),
+  setHasAcceptedEula: (accept) => set({ hasAcceptedEula: accept }),
 
   setUserId: (id) => set({ userId: id }),
   setRole: (role) => set({ role }),
+  setUserName: (name) => set({ userName: name }),
 
   setChildProfile: (name, ageMonths, gender) =>
     set({ childName: name, childAgeMonths: ageMonths, childGender: gender }),
@@ -290,7 +298,9 @@ export const useStore = create<AppState>()(
       partialize: (state) => ({
         language: state.language,
         hasSeenOnboarding: state.hasSeenOnboarding,
+        hasAcceptedEula: state.hasAcceptedEula,
         role: state.role,
+        userName: state.userName,
         childName: state.childName,
         childAgeMonths: state.childAgeMonths,
         childGender: state.childGender,

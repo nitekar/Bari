@@ -1,22 +1,22 @@
 /**
- * app/(tabs)/education.tsx — Education Hub
- * Gateway to all educational modules with progress tracking
+ * app/(parent)/education.tsx — Education Hub for Parent role
+ * Reuses the same hub design as (tabs)/education
+ * Bundle cache invalidation...
  */
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius, shadows } from '../../src/shared/theme';
-import { useStore } from '../../src/store/useStore';
-import { useTranslation } from '../../src/i18n';
-import { EDUCATION_CATEGORIES, MILESTONES, BABY_ACTIVITIES } from '../../src/data';
+import { colors, spacing, borderRadius, shadows } from '../src/shared/theme';
+import { useStore } from '../src/store/useStore';
+import { MILESTONES, BABY_ACTIVITIES, EDUCATION_CATEGORIES } from '../src/data';
+import { useTranslation } from '../src/i18n';
 
-export default function EducationHub() {
+export default function ParentEducationHub() {
   const router = useRouter();
   const { t } = useTranslation();
   const completedItems = useStore((s) => s.completedItems);
 
-  // Calculate total progress
   const allMilestones = MILESTONES.flatMap((g) => g.milestones);
   const allActivities = BABY_ACTIVITIES.flatMap((g) => g.activities);
   const totalCheckable = allMilestones.length + allActivities.length;
@@ -30,50 +30,51 @@ export default function EducationHub() {
         <View style={s.heroDecor1} />
         <View style={s.heroDecor2} />
         <Text style={s.heroEmoji}>📚</Text>
-        <Text style={s.heroTitle}>Learn & Grow</Text>
-        <Text style={s.heroSub}>
-          Everything you need to know about child nutrition, development, and anemia prevention.
-        </Text>
+        <Text style={s.heroTitle}>{t.education.heroTitle}</Text>
+        <Text style={s.heroSub}>{t.education.heroSub}</Text>
         {totalDone > 0 && (
           <View style={s.progressBox}>
             <View style={s.progressBarBg}>
               <View style={[s.progressBarFill, { width: `${overallPct}%` }]} />
             </View>
-            <Text style={s.progressLabel}>{totalDone}/{totalCheckable} items completed</Text>
+            <Text style={s.progressLabel}>{totalDone}/{totalCheckable} {t.education.progressCompleted}</Text>
           </View>
         )}
       </View>
 
       {/* Category grid */}
       <View style={s.grid}>
-        {EDUCATION_CATEGORIES.map((cat) => (
-          <TouchableOpacity
-            key={cat.id}
-            style={[s.catCard, { backgroundColor: cat.bg }]}
-            onPress={() => router.push(cat.route as any)}
-            activeOpacity={0.75}
-          >
-            <View style={[s.catIconBox, { backgroundColor: cat.color + '25' }]}>
-              <Text style={s.catEmoji}>{cat.emoji}</Text>
-            </View>
-            <Text style={[s.catTitle, { color: cat.color }]}>{cat.title}</Text>
-            <Text style={s.catSub}>{cat.subtitle}</Text>
-            <View style={s.catArrow}>
-              <Ionicons name="arrow-forward" size={14} color={cat.color} />
-            </View>
-          </TouchableOpacity>
-        ))}
+        {EDUCATION_CATEGORIES.map((cat) => {
+          // Map ID directly to translation block dynamically
+          const localizedId = cat.id.replace('cat-', '') as keyof typeof t.education.categories;
+          const translatedCat = t.education.categories[localizedId];
+
+          return (
+            <TouchableOpacity
+              key={cat.id}
+              style={[s.catCard, { backgroundColor: cat.bg }]}
+              onPress={() => router.push(cat.route as any)}
+              activeOpacity={0.75}
+            >
+              <View style={[s.catIconBox, { backgroundColor: cat.color + '25' }]}>
+                <Text style={s.catEmoji}>{cat.emoji}</Text>
+              </View>
+              <Text style={[s.catTitle, { color: cat.color }]}>{translatedCat?.title || cat.title}</Text>
+              <Text style={s.catSub}>{translatedCat?.subtitle || cat.subtitle}</Text>
+              <View style={s.catArrow}>
+                <Ionicons name="arrow-forward" size={14} color={cat.color} />
+              </View>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      {/* Quick tip */}
       <View style={s.tipCard}>
         <View style={s.tipHeader}>
           <Ionicons name="bulb-outline" size={20} color={colors.warning} />
-          <Text style={s.tipTitle}>Daily Tip</Text>
+          <Text style={s.tipTitle}>{t.education.tipTitle}</Text>
         </View>
-        <Text style={s.tipText}>
-          Adding a squeeze of lemon or orange juice to your child's beans or greens increases iron absorption by up to 3 times! 🍋
-        </Text>
+        <Text style={s.tipText}>{t.education.tipContent}</Text>
       </View>
 
       <View style={{ height: 100 }} />
@@ -83,9 +84,8 @@ export default function EducationHub() {
 
 const s = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, paddingTop: 52 },
-  // Hero
-  hero: { backgroundColor: '#7E57C2', borderRadius: borderRadius.xl, padding: spacing.xl, marginBottom: spacing.lg, overflow: 'hidden', alignItems: 'center', position: 'relative' },
+  content: { padding: spacing.lg, paddingTop: 16 },
+  hero: { backgroundColor: '#E8849A', borderRadius: borderRadius.xl, padding: spacing.xl, marginBottom: spacing.lg, overflow: 'hidden', alignItems: 'center', position: 'relative' },
   heroDecor1: { position: 'absolute', top: -30, right: -20, width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(255,255,255,0.1)' },
   heroDecor2: { position: 'absolute', bottom: -20, left: -15, width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.08)' },
   heroEmoji: { fontSize: 40, marginBottom: 8 },
@@ -95,15 +95,13 @@ const s = StyleSheet.create({
   progressBarBg: { height: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 3, overflow: 'hidden' },
   progressBarFill: { height: 6, backgroundColor: colors.white, borderRadius: 3 },
   progressLabel: { fontSize: 11, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginTop: 4 },
-  // Grid
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  catCard: { width: '48%', borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: 0, ...shadows.sm, position: 'relative', minHeight: 130 },
+  catCard: { width: '48%', borderRadius: borderRadius.lg, padding: spacing.md, ...shadows.sm, position: 'relative', minHeight: 130 },
   catIconBox: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
   catEmoji: { fontSize: 22 },
   catTitle: { fontSize: 14, fontWeight: '700', marginBottom: 2 },
   catSub: { fontSize: 11, color: colors.textSecondary, lineHeight: 15 },
   catArrow: { position: 'absolute', bottom: spacing.sm, right: spacing.sm },
-  // Tip
   tipCard: { backgroundColor: '#FFF3E0', borderRadius: borderRadius.lg, padding: spacing.md, marginTop: spacing.lg },
   tipHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   tipTitle: { fontSize: 14, fontWeight: '700', color: colors.text },

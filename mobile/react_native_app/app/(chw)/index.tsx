@@ -9,9 +9,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, shadows } from '../../src/shared/theme';
 import { Card, Button } from '../../src/shared/components';
 import { useStore } from '../../src/store/useStore';
+import { useTranslation } from '../../src/i18n';
 
 export default function ChwDashboard() {
   const router = useRouter();
+  const { t } = useTranslation();
   const history = useStore((s) => s.history);
   const today = new Date().toDateString();
   const todayScreenings = history.filter(r => new Date(r.date).toDateString() === today);
@@ -21,33 +23,33 @@ export default function ChwDashboard() {
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       {/* Hero */}
       <View style={styles.hero}>
-        <Text style={styles.heroTitle}>CHW Dashboard</Text>
-        <Text style={styles.heroSub}>Community Health Worker</Text>
+        <Text style={styles.heroTitle}>{t.chwDashboard.title}</Text>
+        <Text style={styles.heroSub}>{t.chwDashboard.subtitle}</Text>
       </View>
 
       {/* Stats row */}
       <View style={styles.statsRow}>
-        <StatCard label="Today" value={todayScreenings.length.toString()} icon="medkit" color={colors.primary} />
-        <StatCard label="Total" value={history.length.toString()} icon="people" color={colors.secondary} />
-        <StatCard label="Severe" value={severeCount.toString()} icon="warning" color={colors.error} />
+        <StatCard label={t.chwDashboard.today} value={todayScreenings.length.toString()} icon="medkit" color={colors.primary} />
+        <StatCard label={t.chwDashboard.total} value={history.length.toString()} icon="people" color={colors.secondary} />
+        <StatCard label={t.chwDashboard.severe} value={severeCount.toString()} icon="warning" color={colors.error} />
       </View>
 
       {/* Quick actions */}
-      <Text style={styles.sectionTitle}>Quick Actions</Text>
-      <Button title="New Screening" onPress={() => router.push('/(chw)/screening')} variant="primary" icon={<Ionicons name="add-circle-outline" size={20} color={colors.white} />} />
+      <Text style={styles.sectionTitle}>{t.chwDashboard.quickActions}</Text>
+      <Button title={t.chwDashboard.newScreening} onPress={() => router.push('/(chw)/screening')} variant="primary" icon={<Ionicons name="add-circle-outline" size={20} color={colors.white} />} />
       <View style={{ height: spacing.md }} />
-      <Button title="View Patients" onPress={() => router.push('/(chw)/patients')} variant="secondary" icon={<Ionicons name="people-outline" size={20} color={colors.text} />} />
+      <Button title={t.chwDashboard.viewPatients} onPress={() => router.push('/(chw)/patients')} variant="secondary" icon={<Ionicons name="people-outline" size={20} color={colors.text} />} />
 
       {/* Recent screenings */}
       {history.length > 0 && (
         <>
-          <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>Recent Screenings</Text>
+          <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>{t.chwDashboard.recentScreenings}</Text>
           {history.slice(0, 5).map(r => (
             <Card key={r.id} style={styles.recordCard}>
               <View style={styles.recordRow}>
                 <View style={[styles.dot, { backgroundColor: dotColor(r.prediction) }]} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.recordName}>{r.patientName ?? 'Unknown'}</Text>
+                  <Text style={styles.recordName}>{r.patientName ?? t.chwDashboard.unknown}</Text>
                   <Text style={styles.recordSub}>{new Date(r.date).toLocaleDateString()} · {r.prediction}</Text>
                 </View>
                 <Text style={styles.conf}>{Math.round(r.confidence * 100)}%</Text>

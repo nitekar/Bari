@@ -11,8 +11,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, shadows } from '../src/shared/theme';
-import { Card, Logo } from '../src/shared/components';
+import { Card, Logo, InputField } from '../src/shared/components';
 import { useTranslation, type Language } from '../src/i18n';
+import { useStore } from '../src/store/useStore';
 
 const LANGUAGES: { code: Language; label: string; flag: string }[] = [
   { code: 'en', label: 'English', flag: '🇬🇧' },
@@ -22,6 +23,8 @@ const LANGUAGES: { code: Language; label: string; flag: string }[] = [
 
 export default function SettingsScreen() {
   const { t, lang, setLang } = useTranslation();
+  const userName = useStore((s) => s.userName);
+  const setUserName = useStore((s) => s.setUserName);
 
   return (
     <ScrollView
@@ -29,6 +32,17 @@ export default function SettingsScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
+      {/* ── Profile Setup ── */}
+      <Text style={styles.sectionTitle}>Account Setup</Text>
+      <Card style={{ marginBottom: spacing.lg }}>
+        <InputField
+          label="Your Full Name"
+          value={userName || ''}
+          onChangeText={setUserName}
+          placeholder="e.g. Marie Claire"
+        />
+      </Card>
+
       {/* ── Language ── */}
       <Text style={styles.sectionTitle}>{t.settings.language}</Text>
       <Text style={styles.sectionSub}>{t.settings.selectLang}</Text>

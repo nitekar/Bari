@@ -3,7 +3,7 @@ import { Tabs } from 'expo-router';
 import { Platform, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../src/shared/theme/colors';
-import { Logo } from '../../src/shared/components';
+import { Logo, LanguageSwitch } from '../../src/shared/components';
 
 const TAB_BAR_STYLE = {
   position: 'absolute' as const,
@@ -30,6 +30,7 @@ export default function AdminLayout() {
       headerTintColor: colors.primaryDark,
       headerTitleStyle: { fontWeight: '700', fontSize: 17, color: colors.text },
       headerLeft: () => <View style={{ marginLeft: 16 }}><Logo size="sm" showText /></View>,
+      headerRight: () => <LanguageSwitch />,
     }}>
       <Tabs.Screen name="index"     options={{ title: 'Dashboard', headerShown: false, tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'grid' : 'grid-outline'} size={22} color={color} /> }} />
       <Tabs.Screen name="users"     options={{ title: 'Users',     tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'people' : 'people-outline'} size={22} color={color} /> }} />

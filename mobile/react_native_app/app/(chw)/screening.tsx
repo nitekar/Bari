@@ -135,19 +135,19 @@ export default function ScreeningScreen() {
 
         {/* Step 1 — Mode */}
         <SectionCard>
-          <StepHeader step={1} title="Screening Mode" subtitle="Choose based on available data" complete />
+          <StepHeader step={1} title={t.screening.stepMode} subtitle={t.screening.stepModeSub} complete />
           <ModePill
-            label="Quick Screen"
+            label={t.screening.modeImage}
             icon="eye-outline"
-            description="Image only → Anemic / Non-Anemic"
+            description={t.screening.modeDescQuick}
             active={state.mode === 'quick'}
             onPress={() => actions.setMode('quick')}
           />
           <View style={{ height: spacing.sm }} />
           <ModePill
-            label="Full Screening"
+            label={t.screening.modeMultimodal}
             icon="clipboard-outline"
-            description="Image + clinical data → Severity grade"
+            description={t.screening.modeDescFull}
             active={state.mode === 'full'}
             onPress={() => actions.setMode('full')}
           />
@@ -157,8 +157,8 @@ export default function ScreeningScreen() {
         <SectionCard>
           <StepHeader
             step={2}
-            title="Patient Information"
-            subtitle="Optional — stored for records"
+            title={t.screening.patientInfo}
+            subtitle={t.screening.optional}
           />
           <InputField
             label={t.screening.patientName}
@@ -179,8 +179,8 @@ export default function ScreeningScreen() {
           <SectionCard>
             <StepHeader
               step={3}
-              title="Clinical Data"
-              subtitle="Required for severity classification"
+              title={t.screening.stepClinical}
+              subtitle={t.screening.stepClinicalSub}
               complete={derived.hasAge}
             />
             <InputField
@@ -205,8 +205,8 @@ export default function ScreeningScreen() {
         <SectionCard>
           <StepHeader
             step={state.mode === 'full' ? 4 : 3}
-            title="Conjunctiva Image"
-            subtitle="Inner eyelid photograph"
+            title={t.screening.conjunctivaImage}
+            subtitle={t.screening.photoHint}
             complete={derived.hasImage}
           />
 
@@ -219,7 +219,7 @@ export default function ScreeningScreen() {
                 activeOpacity={0.85}
               >
                 <Ionicons name="camera-outline" size={14} color={colors.white} />
-                <Text style={styles.changeImageText}>Retake</Text>
+                <Text style={styles.changeImageText}>{t.screening.changeImage}</Text>
               </TouchableOpacity>
               <View style={styles.imageReadyBadge}>
                 <Ionicons name="checkmark-circle" size={14} color={colors.success} />
@@ -235,9 +235,9 @@ export default function ScreeningScreen() {
               <View style={styles.cameraIconWrap}>
                 <Ionicons name="camera" size={30} color={colors.primary} />
               </View>
-              <Text style={styles.cameraTitle}>Capture Conjunctiva</Text>
+              <Text style={styles.cameraTitle}>{t.screening.addImage}</Text>
               <Text style={styles.cameraHint}>
-                Gently pull the lower eyelid down and photograph the inner surface
+                {t.screening.pullEyelid}
               </Text>
               <View style={styles.cameraCta}>
                 <Ionicons name="add" size={14} color={colors.white} />
@@ -264,40 +264,40 @@ export default function ScreeningScreen() {
             <Text style={styles.errorText}>{derived.error}</Text>
           </View>
         )}
-      </ScrollView>
 
-      {/* ── Fixed bottom action bar ─────────────────────────────────────────── */}
-      <View style={[styles.actionBar, { paddingBottom: insets.bottom + spacing.sm }]}>
-        <View style={styles.actionInner}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.actionTitle}>
-              {state.mode === 'quick' ? 'Quick Screen' : 'Full Screening'}
-            </Text>
-            <Text style={styles.actionSub}>
-              {derived.canSubmit ? 'Ready to analyse' : 'Complete required fields above'}
-            </Text>
+        {/* ── Action bar moved inside scrollview to prevent overlap ── */}
+        <View style={styles.actionBarEmbedded}>
+          <View style={styles.actionInner}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.actionTitle}>
+                {state.mode === 'quick' ? t.screening.modeImage : t.screening.modeMultimodal}
+              </Text>
+              <Text style={styles.actionSub}>
+                {derived.canSubmit ? t.screening.readyAnalyse : t.screening.completeFields}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.analyseBtn, !derived.canSubmit && styles.analyseBtnDisabled]}
+              onPress={actions.handleSubmit}
+              disabled={!derived.canSubmit || derived.isLoading}
+              activeOpacity={0.85}
+            >
+              <Ionicons
+                name="pulse-outline"
+                size={18}
+                color={derived.canSubmit ? colors.white : colors.disabled}
+              />
+              <Text style={[styles.analyseBtnText, !derived.canSubmit && styles.analyseBtnTextDisabled]}>
+                {t.screening.startScreening}
+              </Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={[styles.analyseBtn, !derived.canSubmit && styles.analyseBtnDisabled]}
-            onPress={actions.handleSubmit}
-            disabled={!derived.canSubmit || derived.isLoading}
-            activeOpacity={0.85}
-          >
-            <Ionicons
-              name="pulse-outline"
-              size={18}
-              color={derived.canSubmit ? colors.white : colors.disabled}
-            />
-            <Text style={[styles.analyseBtnText, !derived.canSubmit && styles.analyseBtnTextDisabled]}>
-              Analyse
-            </Text>
-          </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
 
       <LoadingOverlay
         visible={derived.isLoading}
-        message={state.mode === 'quick' ? 'Analysing conjunctiva…' : 'Analysing patient data…'}
+        message={t.common.loading}
       />
     </View>
   );
@@ -419,16 +419,15 @@ const styles = StyleSheet.create({
   },
   errorText: { ...typography.caption, color: colors.error, flex: 1 },
 
-  // Action bar
-  actionBar: {
+  // Action bar (embedded)
+  actionBarEmbedded: {
     backgroundColor: colors.surface,
-    borderTopWidth: 1, borderTopColor: colors.borderLight,
-    paddingTop: spacing.md, paddingHorizontal: spacing.md,
-    ...Platform.select({
-      ios:     { shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: -3 } },
-      android: { elevation: 10 },
-      default: {},
-    }),
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+    marginBottom: 80, // Padding to ensure it floats above TABS!
+    borderWidth: 1, borderColor: colors.borderLight,
+    ...cardShadow,
   },
   actionInner: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   actionTitle: { ...typography.bodyBold, color: colors.text },

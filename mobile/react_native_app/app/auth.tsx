@@ -40,6 +40,7 @@ interface RoleOption {
 const ROLE_OPTIONS: RoleOption[] = [
   { role: 'chw',   icon: 'medkit-outline',  label: 'CHW',    description: 'Community Health Worker', color: colors.primary },
   { role: 'parent',icon: 'heart-outline',   label: 'Parent', description: 'Parent or Caregiver',  color: colors.secondary },
+  { role: 'admin', icon: 'shield-outline',  label: 'Admin',  description: 'System Administrator', color: colors.error },
 ];
 
 function RolePicker({

@@ -15,12 +15,18 @@ export interface UserProfile {
   full_name: string | null;
 }
 
+// ── Deep link base — must match app.config.js `scheme` ──────────────────────
+// Supabase will append the token fragment/params to this URL.
+// The _layout.tsx deep link handler parses them and calls setSession().
+const EMAIL_REDIRECT = 'anemia-screening://auth/callback';
+const PASSWORD_RESET_REDIRECT = 'anemia-screening://auth?mode=newpassword';
+
 // ── Sign Up ──────────────────────────────────────────────────────────────────
 export async function signUp(email: string, password: string) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: 'https://clmvkxgmpytgztthrdmk.supabase.co' },
+    options: { emailRedirectTo: EMAIL_REDIRECT },
   });
   if (error) throw new Error(error.message);
   if (data.user && data.user.identities && data.user.identities.length === 0) {
@@ -40,7 +46,7 @@ export async function signUpWithRole(
     email,
     password,
     options: {
-      emailRedirectTo: 'https://clmvkxgmpytgztthrdmk.supabase.co',
+      emailRedirectTo: EMAIL_REDIRECT,
       data: { role, full_name: fullName ?? '' },
     },
   });
@@ -53,10 +59,8 @@ export async function signUpWithRole(
 
 // ── Password Reset ───────────────────────────────────────────────────────────
 export async function sendPasswordReset(email: string) {
-  // Use the Supabase project URL as redirect — the user resets on the
-  // hosted page, then returns to the app and signs in with the new password.
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://clmvkxgmpytgztthrdmk.supabase.co',
+    redirectTo: PASSWORD_RESET_REDIRECT,
   });
   if (error) throw new Error(error.message);
 }

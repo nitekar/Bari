@@ -4,11 +4,12 @@
  */
 import React from 'react';
 import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Redirect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, shadows } from '../../src/shared/theme';
 import { Card, Button } from '../../src/shared/components';
 import { useStore } from '../../src/store/useStore';
+import { useTranslation } from '../../src/i18n';
 
 function riskLabel(prediction: string) {
   if (prediction === 'Severe' || prediction === 'Anemic') return { label: 'High Risk', color: colors.error };
@@ -19,7 +20,13 @@ function riskLabel(prediction: string) {
 
 export default function ParentDashboard() {
   const router = useRouter();
+  const { t } = useTranslation();
   const childName = useStore((s) => s.childName);
+  const userId = useStore((s) => s.userId);
+
+  if (!userId) {
+    return <Redirect href="/education" />;
+  }
   const history = useStore((s) => s.history);
   const sleepLogs = useStore((s) => s.sleepLogs);
   const feedingLogs = useStore((s) => s.feedingLogs);
@@ -30,7 +37,7 @@ export default function ParentDashboard() {
   const lastFeeding = feedingLogs[0] ?? null;
   const risk = latestScreening ? riskLabel(latestScreening.prediction) : null;
 
-  const greeting = childName ? `Hi, ${childName}!` : 'Welcome!';
+  const greeting = childName ? `${t.parentDashboard.hi}, ${childName}!` : t.parentDashboard.welcome;
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -41,14 +48,14 @@ export default function ParentDashboard() {
         </View>
         <Text style={styles.heroTitle}>{greeting}</Text>
         <Text style={styles.heroSub}>
-          {childAgeMonths != null ? `${childAgeMonths} months old` : "Track your child's health"}
+          {childAgeMonths != null ? `${childAgeMonths} ${t.parentDashboard.monthsOld}` : t.parentDashboard.heroSub}
         </Text>
       </View>
 
       {/* Latest screening result */}
       {latestScreening && risk && (
         <>
-          <Text style={styles.sectionTitle}>Latest Screening</Text>
+          <Text style={styles.sectionTitle}>{t.history.lastScreening}</Text>
           <Card style={[styles.resultCard, { borderLeftColor: risk.color, borderLeftWidth: 4 }]}>
             <View style={styles.resultRow}>
               <View style={[styles.riskBadge, { backgroundColor: risk.color + '20' }]}>
@@ -58,55 +65,55 @@ export default function ParentDashboard() {
             </View>
             <Text style={styles.resultAction}>
               {latestScreening.prediction === 'Severe'
-                ? 'Please visit a health facility as soon as possible.'
+                ? t.parentDashboard.severeAlert
                 : latestScreening.prediction === 'Moderate'
-                ? 'Schedule a follow-up with your health worker.'
-                : 'Continue with iron-rich diet and regular check-ups.'}
+                ? t.parentDashboard.moderateAlert
+                : t.parentDashboard.healthyMessage}
             </Text>
           </Card>
         </>
       )}
 
       {/* Baby summary */}
-      <Text style={styles.sectionTitle}>Baby Summary</Text>
+      <Text style={styles.sectionTitle}>{t.parentDashboard.babySummary}</Text>
       <View style={styles.summaryRow}>
         <TouchableOpacity style={styles.summaryCard} onPress={() => router.push('/parent-sleep')} activeOpacity={0.8}>
           <Ionicons name="moon-outline" size={24} color={colors.primaryDark} />
-          <Text style={styles.summaryCardTitle}>Sleep</Text>
+          <Text style={styles.summaryCardTitle}>{t.parentDashboard.sleep}</Text>
           <Text style={styles.summaryCardSub}>
-            {lastSleep ? `${lastSleep.durationHours.toFixed(1)}h on ${new Date(lastSleep.date).toLocaleDateString()}` : 'No entries'}
+            {lastSleep ? `${lastSleep.durationHours.toFixed(1)}h on ${new Date(lastSleep.date).toLocaleDateString()}` : t.parentDashboard.noEntries}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.summaryCard} onPress={() => router.push('/parent-feeding')} activeOpacity={0.8}>
           <Ionicons name="nutrition-outline" size={24} color={colors.secondary} />
-          <Text style={styles.summaryCardTitle}>Feeding</Text>
+          <Text style={styles.summaryCardTitle}>{t.parentDashboard.feeding}</Text>
           <Text style={styles.summaryCardSub}>
-            {lastFeeding ? `${lastFeeding.type} at ${lastFeeding.time}` : 'No entries'}
+            {lastFeeding ? `${lastFeeding.type} at ${lastFeeding.time}` : t.parentDashboard.noEntries}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.summaryCard} onPress={() => router.push('/parent-development')} activeOpacity={0.8}>
           <Ionicons name="trending-up-outline" size={24} color={colors.accentDark} />
-          <Text style={styles.summaryCardTitle}>Growth</Text>
+          <Text style={styles.summaryCardTitle}>{t.parentDashboard.growth}</Text>
           <Text style={styles.summaryCardSub}>
-            {childAgeMonths != null ? `${childAgeMonths} mo` : 'Set age'}
+            {childAgeMonths != null ? `${childAgeMonths} mo` : t.parentDashboard.setAge}
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* Quick actions */}
-      <Text style={styles.sectionTitle}>Quick Actions</Text>
+      <Text style={styles.sectionTitle}>{t.parentDashboard.quickActions}</Text>
       <Button
-        title="View Screening Results"
+        title={t.home.viewHistory}
         onPress={() => router.push('/(parent)/results')}
         variant="primary"
         icon={<Ionicons name="pulse-outline" size={20} color={colors.white} />}
       />
       <View style={{ height: spacing.sm }} />
       <Button
-        title="Learn About Nutrition"
-        onPress={() => router.push('/(parent)/education')}
+        title={t.result.learnMore}
+        onPress={() => router.push('/education')}
         variant="secondary"
         icon={<Ionicons name="book-outline" size={20} color={colors.text} />}
       />

@@ -152,7 +152,7 @@ export default function ScreeningScreen() {
         {/* Submit */}
         <View style={styles.submitContainer}>
           <Button
-            title={state.mode === 'quick' ? 'Quick Screen' : 'Run Full Screening'}
+            title={t.screening.startScreening}
             onPress={actions.handleSubmit}
             variant="primary"
             loading={derived.isLoading}
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
-    paddingBottom: 120,
+    paddingBottom: 160,
   },
   // ── Mode toggle ──
   modeToggle: {
@@ -199,7 +199,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.sm,
+    paddingVertical: 12,
+    minHeight: 44,
     borderRadius: borderRadius.sm,
     gap: 6,
   },
@@ -240,6 +241,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.border,
     backgroundColor: colors.surfaceElevated,
+    paddingVertical: spacing.xl,
+    minHeight: 120,
+    justifyContent: 'center',
   },
   uploadText: {
     ...typography.body,

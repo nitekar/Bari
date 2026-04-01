@@ -82,9 +82,9 @@ export default function HomeScreen() {
       {recent.length > 0 && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Patients</Text>
+            <Text style={styles.sectionTitle}>{t.guestDashboard.recentPatients}</Text>
             <TouchableOpacity onPress={() => router.push('/history')}>
-              <Text style={styles.seeAll}>See all</Text>
+              <Text style={styles.seeAll}>{t.guestDashboard.seeAll}</Text>
             </TouchableOpacity>
           </View>
           {recent.map((record) => (
@@ -99,6 +99,7 @@ export default function HomeScreen() {
 }
 
 function PatientCard({ record }: { record: ScreeningRecord }) {
+  const { t } = useTranslation();
   const severityColor = severityColorMap[record.prediction] ?? colors.primary;
   const days = nextScreeningDays[record.prediction] ?? 90;
   const nextDate = new Date(record.date);
@@ -115,13 +116,13 @@ function PatientCard({ record }: { record: ScreeningRecord }) {
         <View style={styles.patientTopRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.patientName} numberOfLines={1}>
-              {record.patientName || 'Unknown Patient'}
+              {record.patientName || t.guestDashboard.unknownPatient}
             </Text>
             <View style={styles.metaRow}>
               {record.age != null && (
                 <View style={styles.metaChip}>
                   <Ionicons name="person-outline" size={11} color={colors.textSecondary} />
-                  <Text style={styles.metaText}>{record.age} yrs</Text>
+                  <Text style={styles.metaText}>{record.age} {t.guestDashboard.yrs}</Text>
                 </View>
               )}
               {record.patientLocation ? (
@@ -149,7 +150,7 @@ function PatientCard({ record }: { record: ScreeningRecord }) {
             color={isPast ? colors.severitySevere : colors.accentDark}
           />
           <Text style={[styles.reminderText, { color: isPast ? colors.severitySevere : colors.accentDark }]}>
-            {isPast ? 'Follow-up overdue — ' : 'Next screening: '}
+            {isPast ? t.guestDashboard.followUpOverdue : t.guestDashboard.nextScreening}
             <Text style={{ fontWeight: '700' }}>{nextDateStr}</Text>
           </Text>
         </View>

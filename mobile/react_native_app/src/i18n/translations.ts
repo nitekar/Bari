@@ -73,6 +73,87 @@ export const translations = {
       changeImage: 'Change Image',
       startScreening: 'Start Screening',
       missingAge: 'Please enter the patient age.',
+      modeDescQuick: 'Image only → Anemic / Non-Anemic',
+      modeDescFull: 'Image + clinical data → Severity grade',
+      photoHint: 'Inner eyelid photograph',
+      pullEyelid: 'Gently pull the lower eyelid down and photograph the inner surface',
+      readyAnalyse: 'Ready to analyse',
+      completeFields: 'Complete required fields above',
+      stepMode: 'Screening Mode',
+      stepModeSub: 'Choose based on available data',
+      stepClinical: 'Clinical Data',
+      stepClinicalSub: 'Required for full analysis',
+    },
+    education: {
+      heroTitle: 'Learn & Grow',
+      heroSub: 'Everything about child nutrition, development, and anemia prevention.',
+      progressCompleted: 'completed',
+      tipTitle: 'Daily Tip',
+      tipContent: 'Liver is the richest source of iron. Including it in your child\'s diet 1–2 times per week can significantly reduce anemia risk. 🥩',
+      anemiaGuide: {
+        title: 'Anemia Guide',
+        subtitle: 'Understanding anemia in children',
+        warning: 'Anemia is the #1 nutritional disorder in children under 5 in Africa. Early detection and iron-rich diets can prevent serious health consequences.',
+        ctaTitle: 'Screen your child today',
+        ctaBody: 'Use Bari\'s AI-powered conjunctiva scan to check for anemia in under 30 seconds.',
+        ctaBtn: 'Start Screening',
+        sections: [
+          {
+            id: 'ae-what',
+            title: 'What is Anemia?',
+            emoji: '🩺',
+            points: [
+              'Anemia occurs when your blood has too few red blood cells or decreased hemoglobin levels to carry adequate oxygen.',
+              'Iron-deficiency is the most common form, particularly prevalent during rapid growth phases in children under 5.',
+              'According to the WHO, nearly 42% of children globally suffer from anemia, with the highest burden in Sub-Saharan Africa.',
+              'Chronic anemia leads to irreversible cognitive and physical developmental delays if left untreated.'
+            ]
+          },
+          {
+            id: 'ae-causes',
+            title: 'Common Causes',
+            emoji: '🔍',
+            points: [
+              'Inadequate dietary iron intake (reliance on starchy, low-mineral staples).',
+              'Poor iron absorption due to consuming tannins (tea) and phytates (unsoaked beans) during iron-rich meals.',
+              'Chronic parasitic infections such as malaria, hookworms, and schistosomiasis destroying red blood cells.',
+              'Underlying inflammatory diseases or recurrent diarrhea depleting critical micronutrients.'
+            ]
+          },
+          {
+            id: 'ae-symptoms',
+            title: 'Signs of Severe Anemia',
+            emoji: '⚠️',
+            points: [
+              'Pronounced pallor (paleness) in the inner eyelids, palms, nail beds, and gums.',
+              'Lethargy, extreme tiredness, or irritability without clear reason.',
+              'Shortness of breath or rapid heartbeat after minimal exertion.',
+              'Pica – unexpected cravings to eat non-food items like dirt or chalk.',
+              'Failure to thrive, poor appetite, and stunted weight gain.'
+            ]
+          },
+          {
+            id: 'ae-prevention',
+            title: 'Prevention & Management',
+            emoji: '🛡️',
+            points: [
+              'Prioritize highly bio-available "Heme" iron sources at least twice weekly: liver, red meat, and small dried fish.',
+              'Pair plant-based iron (beans, dark green leafy vegetables) with Vitamin C (citrus, tomatoes) to boost absorption by up to 3x.',
+              'Strictly avoid giving children black tea or coffee during meals.',
+              'Execute routine deworming protocols every 6 months to prevent parasite-driven iron loss.',
+              'Conduct AI screening every 3 months during rapid developmental stages to catch regressions early.'
+            ]
+          }
+        ]
+      },
+      categories: {
+        milestones: { title: 'Milestones', subtitle: 'Track development' },
+        feeding: { title: 'Feeding Guide', subtitle: 'What to feed by age' },
+        nutrition: { title: 'Nutrition', subtitle: 'Nutrients for growth' },
+        anemia: { title: 'Anemia Guide', subtitle: 'Causes & prevention' },
+        activities: { title: 'Activities', subtitle: 'Brain-boosting play' },
+        feedingplan: { title: 'Meal Plan', subtitle: 'Weekly meals' },
+      }
     },
     result: {
       noResult: 'No results available',
@@ -97,11 +178,43 @@ export const translations = {
       recentActivity: 'Recent Activity',
       severityBreakdown: 'Severity Breakdown',
     },
-    education: {
-      title: 'Understanding Anemia',
-      subtitle: 'Learn about symptoms, prevention,\nand the foods that can help.',
-      disclaimer: 'This information is for educational purposes only and does not replace professional medical advice.',
+    parentDashboard: {
+      heroSub: "Track your child's health",
+      monthsOld: "months old",
+      babySummary: "Baby Summary",
+      sleep: "Sleep",
+      feeding: "Feeding",
+      growth: "Growth",
+      noEntries: "No entries",
+      setAge: "Set age",
+      quickActions: "Quick Actions",
+      severeAlert: "Please visit a health facility as soon as possible.",
+      moderateAlert: "Schedule a follow-up with your health worker.",
+      healthyMessage: "Continue with iron-rich diet and regular check-ups.",
+      hi: "Hi",
+      welcome: "Welcome!",
     },
+    chwDashboard: {
+      title: "CHW Dashboard",
+      subtitle: "Community Health Worker",
+      today: "Today",
+      total: "Total",
+      severe: "Severe",
+      quickActions: "Quick Actions",
+      newScreening: "New Screening",
+      viewPatients: "View Patients",
+      recentScreenings: "Recent Screenings",
+      unknown: "Unknown",
+    },
+    guestDashboard: {
+      recentPatients: "Recent Patients",
+      seeAll: "See all",
+      unknownPatient: "Unknown Patient",
+      yrs: "yrs",
+      followUpOverdue: "Follow-up overdue — ",
+      nextScreening: "Next screening: ",
+    },
+
     profile: {
       title: 'My Profile',
       signedInAs: 'Signed in as',
@@ -227,6 +340,87 @@ export const translations = {
       changeImage: "Changer l'image",
       startScreening: 'Démarrer le dépistage',
       missingAge: 'Veuillez entrer l\'âge du patient.',
+      modeDescQuick: 'Image seule → Anémique / Non-Anémique',
+      modeDescFull: 'Image + données cliniques → Sévérité',
+      photoHint: 'Photographie de la paupière interne',
+      pullEyelid: 'Tirez doucement la paupière inférieure vers le bas et photographiez la surface interne',
+      readyAnalyse: 'Prêt à analyser',
+      completeFields: 'Remplissez les champs requis ci-dessus',
+      stepMode: 'Mode de dépistage',
+      stepModeSub: 'Choisissez selon les données disponibles',
+      stepClinical: 'Données cliniques',
+      stepClinicalSub: 'Requis pour une analyse complète',
+    },
+    education: {
+      heroTitle: 'Apprendre et Grandir',
+      heroSub: 'Tout sur la nutrition infantile, le développement et la prévention de l\'anémie.',
+      progressCompleted: 'terminés',
+      tipTitle: 'Conseil du jour',
+      tipContent: 'Le foie est la source de fer la plus riche. L\'inclure dans l\'alimentation de votre enfant 1 à 2 fois par semaine peut réduire considérablement le risque d\'anémie. 🥩',
+      anemiaGuide: {
+        title: 'Guide de l\'Anémie',
+        subtitle: 'Comprendre l\'anémie chez l\'enfant',
+        warning: 'L\'anémie est le trouble nutritionnel n°1 chez les enfants de moins de 5 ans en Afrique. Une détection précoce et des régimes riches en fer peuvent éviter de graves conséquences sur la santé.',
+        ctaTitle: 'Dépistez votre enfant aujourd\'hui',
+        ctaBody: 'Utilisez le scan conjonctival par IA de Bari pour vérifier l\'anémie en moins de 30 secondes.',
+        ctaBtn: 'Démarrer le dépistage',
+        sections: [
+          {
+            id: 'ae-what',
+            title: 'Qu\'est-ce que l\'Anémie ?',
+            emoji: '🩺',
+            points: [
+              'L\'anémie survient lorsque votre sang contient trop peu de globules rouges ou un taux d\'hémoglobine insuffisant pour transporter l\'oxygène.',
+              'La carence en fer est la forme la plus courante, particulièrement fréquente lors des phases de croissance rapide chez les enfants de moins de 5 ans.',
+              'Selon l\'OMS, près de 42 % des enfants dans le monde souffrent d\'anémie, l\'Afrique subsaharienne étant la plus touchée.',
+              'L\'anémie chronique entraîne des retards de développement cognitif et physique irréversibles si elle n\'est pas traitée.'
+            ]
+          },
+          {
+            id: 'ae-causes',
+            title: 'Causes Fréquentes',
+            emoji: '🔍',
+            points: [
+              'Apport alimentaire en fer insuffisant (régimes basés sur des féculents pauvres en minéraux).',
+              'Mauvaise absorption du fer due à la consommation de tanins (thé) et de phytates (haricots non trempés) pendant les repas.',
+              'Infections parasitaires chroniques telles que le paludisme, les ankylostomes et la schistosomiase détruisant les globules rouges.',
+              'Maladies inflammatoires sous-jacentes ou diarrhées à répétition épuisant les micronutriments essentiels.'
+            ]
+          },
+          {
+            id: 'ae-symptoms',
+            title: 'Signes d\'Anémie Sévère',
+            emoji: '⚠️',
+            points: [
+              'Pâleur prononcée des paupières internes, des paumes de la main, du lit des ongles et des gencives.',
+              'Léthargie, fatigue extrême ou irritabilité sans raison évidente.',
+              'Essoufflement ou rythme cardiaque rapide après un effort minimal.',
+              'Pica – envie inattendue de manger des choses non alimentaires comme de la terre ou de la craie.',
+              'Retard de croissance, manque d\'appétit et stagnation du poids.'
+            ]
+          },
+          {
+            id: 'ae-prevention',
+            title: 'Prévention et Gestion',
+            emoji: '🛡️',
+            points: [
+              'Privilégiez les sources de fer "héminique" hautement biodisponible au moins deux fois par semaine : foie, viande rouge et petits poissons séchés.',
+              'Associez le fer végétal (haricots, légumes verts) à de la vitamine C (agrumes, tomates) pour multiplier l\'absorption par 3.',
+              'Évitez formellement de donner du thé noir ou du café aux enfants pendant les repas.',
+              'Appliquez des protocoles de déparasitage de routine tous les 6 mois pour prévenir la perte de fer due aux parasites.',
+              'Effectuez un dépistage IA tous les 3 mois pendant les stades de développement rapide pour repérer toute régression.'
+            ]
+          }
+        ]
+      },
+      categories: {
+        milestones: { title: 'Étapes Pédagogiques', subtitle: 'Suivi du développement' },
+        feeding: { title: 'Guide d\'Alimentation', subtitle: 'Quoi donner par âge' },
+        nutrition: { title: 'Nutrition', subtitle: 'Nutriments pour la croissance' },
+        anemia: { title: 'Guide de l\'Anémie', subtitle: 'Causes et prévention' },
+        activities: { title: 'Activités', subtitle: 'Jeux pour stimuler le cerveau' },
+        feedingplan: { title: 'Plan de Repas', subtitle: 'Repas hebdomadaires' },
+      }
     },
     result: {
       noResult: 'Aucun résultat disponible',
@@ -251,10 +445,41 @@ export const translations = {
       recentActivity: 'Activité récente',
       severityBreakdown: 'Répartition sévérité',
     },
-    education: {
-      title: "Comprendre l'Anémie",
-      subtitle: "Apprenez les symptômes, la prévention,\net les aliments qui peuvent aider.",
-      disclaimer: "Ces informations sont à but éducatif uniquement et ne remplacent pas les conseils médicaux professionnels.",
+    parentDashboard: {
+      heroSub: "Suivez la santé de votre enfant",
+      monthsOld: "mois",
+      babySummary: "Résumé du bébé",
+      sleep: "Sommeil",
+      feeding: "Alimentation",
+      growth: "Croissance",
+      noEntries: "Aucune entrée",
+      setAge: "Définir l'âge",
+      quickActions: "Actions Rapides",
+      severeAlert: "Veuillez vous rendre dans un centre de santé dès que possible.",
+      moderateAlert: "Planifiez un suivi avec votre agent de santé.",
+      healthyMessage: "Continuez avec un régime riche en fer et des contrôles réguliers.",
+      hi: "Salut",
+      welcome: "Bienvenue !",
+    },
+    chwDashboard: {
+      title: "Tableau de Bord ASC",
+      subtitle: "Agent de Santé Communautaire",
+      today: "Aujourd'hui",
+      total: "Total",
+      severe: "Sévère",
+      quickActions: "Actions Rapides",
+      newScreening: "Nouveau dépistage",
+      viewPatients: "Voir les patients",
+      recentScreenings: "Dépistages Récents",
+      unknown: "Inconnu",
+    },
+    guestDashboard: {
+      recentPatients: "Patients Récents",
+      seeAll: "Voir tout",
+      unknownPatient: "Patient Inconnu",
+      yrs: "ans",
+      followUpOverdue: "Suivi en retard — ",
+      nextScreening: "Prochain dépistage : ",
     },
     profile: {
       title: 'Mon Profil',
@@ -380,6 +605,87 @@ export const translations = {
       changeImage: 'Hindura ishusho',
       startScreening: 'Tangira Isuzuma',
       missingAge: 'Nyamuneka injiza imyaka y\'umurwayi.',
+      modeDescQuick: 'Ishusho gusa → Indwara / Nta ndwara',
+      modeDescFull: 'Ishusho + ibipimo → Ubukana',
+      photoHint: 'Ifoto y\'imbere y\'ijisho',
+      pullEyelid: 'Gura site y\'hasi y\'ijisho buhoro ufotore imbere',
+      readyAnalyse: 'Byiteguye gusesengura',
+      completeFields: 'Uzuza ibyasabwe haruguru',
+      stepMode: 'Uburyo bw\'Isuzuma',
+      stepModeSub: 'Hitamo ukurikije amakuru uhari',
+      stepClinical: 'Amakuru y\'Ubuzima',
+      stepClinicalSub: 'Bikenewe mw\'isesengura ryuzuye',
+    },
+    education: {
+      heroTitle: 'Kwiga no Gukura',
+      heroSub: 'Byose ku byerekeye imirire y\'abana, imikurire, n\'uburyo bwo kwirinda indwara y\'amaraso macye (Anemia).',
+      progressCompleted: 'ibyarangiye',
+      tipTitle: 'Inama y\'Umunsi',
+      tipContent: 'Imwijima niyo soko ikungahaye cyane ku ubutare cyangwa Fer. Kubigaburira umwana wawe inshuro 1–2 mu cyumweru bigabanya cyane ibyago byo kurwara indwara y\'amaraso macye. 🥩',
+      anemiaGuide: {
+        title: 'Igitabo cy\'Indwara y\'Amaraso Macye',
+        subtitle: 'Kumenya ibijyanye n\'indwara y\'amaraso macye mu bana',
+        warning: 'Indwara y\'amaraso macye numwe mubibazo by\'imirire bihangayikishije abana bari munsi y\'imyaka 5 muri Afurika. Kuyisuzumisha kare no kugaburira umwana ibiribwa bikungahaye ku ubutari bishobora kwirinda ingaruka zikomeye z\'ubuzima.',
+        ctaTitle: 'Suzuma umwana wawe uyu munsi',
+        ctaBody: 'Koresha isuzuma ryigenga rya Bari rifashwa n\'ubwenge bw\'ubukorano ngo umenye niba umwana afite indwara y\'amaraso macye mugihe kitarenze amasegonda 30.',
+        ctaBtn: 'Tangira Isuzuma',
+        sections: [
+          {
+            id: 'ae-what',
+            title: 'Indwara y\'amaraso macye n\'iki?',
+            emoji: '🩺',
+            points: [
+              'Indwara y\'amaraso macye ibaho iyo amaraso yawe afite uturemangingo tw\'amaraso dutukura duke cyangwa urugero rw\'hemoglobine rugabanutse kugirango amaraso atware umwuka wa ogisijeni uhagije.',
+              'Ibanze igaragazwa no kubura fer mu maraso, cyane cyane yiganje mu byiciro byo gukura vuba mu bana bari munsi y\'imyaka 5.',
+              'Dukurikije ishami ry\'umuryango w\'abibumbye ryita ku Buzima (OMS/WHO), hafi 42% by\'abana ku isi bafite iyi ndwara mu gihe Afurika yo munsi yubutayu bwa Sahara ifite umubare munini wabo bana.',
+              'Iyi ndwara idakira iterwa no gukererwa mu mikurire y\'ubwonko ndetse n\'umubiri muba byaragombaga kubaye mu gihe hakiri kare ariko ntibivuze ko bivanweho.'
+            ]
+          },
+          {
+            id: 'ae-causes',
+            title: 'Ibiyitera bimenyerewe',
+            emoji: '🔍',
+            points: [
+              'Kwinjiza ubutare budahagije mu mirire ya buri munsi (kwishingikiriza kubiryo byiganjemo ibinyamafufu, no kubura intungamubiri z\'imyunyungugu).',
+              'Amasaha y\'imirire mibi ikuramo fer iterwa no kunywa ibinyobwa byicyayi na phytates mubihe byamafunguro bikungahaye kbutare.',
+              'Indwara zanduza bihoraho ziterwa na virusi harimo malaria, hamwe ninzoka nzoka yo mumara zicamo ibice zigamije gutesha agaciro amaraso ndetse zangiza uturemangingo tw\'amaraso zitwiyongerera uko bugicya.',
+              'Indwara zanga gukira zangiza ingingo z\'imiterere nka macinya, ndetse nibihaha bikuramo burundu intungamubiri.'
+            ]
+          },
+          {
+            id: 'ae-symptoms',
+            title: 'Ibimenyetso byihariye',
+            emoji: '⚠️',
+            points: [
+              'Kugaragara ko imbere y\'amaso, ibiganza by\'amaboko , mu mabara y\'inzara ndetse no mumishino, hazamo umweru.',
+              'Kugerageza no kurambirwa hamwe no kwigunga mubuzimbwumwana muto gukomeye bitagize igisobanuro nyacyo.',
+              'Guhumeka nabi cg umutima ukajya uhaguruka cyane nyuma yumushyuguhwa cyane muntu ufite ubukana bwiyi ndwara bukabije cyane.',
+              'Pica – Igihe usanga agize ikimenyetso k\'igituza ashatse guteka ibice na kwibika ahantu nkamashami agira ingaruka byo kumirwa biryo nkiitaka cg ishoka yingume bigize umusonga.',
+              'Gutsindwa gukura ndetse nimigabanyirize yo kurya birya no kudakura bijyanye nuburemre bimuteza kuzura ikibazo yubuzima bigabanya ndetse bihutishwamo kubyibuka ibintu bidatuha urubura cyane.'
+            ]
+          },
+          {
+            id: 'ae-prevention',
+            title: 'Kuyirinda no Gukurikirana',
+            emoji: '🛡️',
+            points: [
+              'Shyira imbere ibiribwa bitanga "Heme" cyangwa fer mu byingirakamaro bikunze kuboneka aho nibura kugera kubikoresho bibiri nko muri: Imwijima, inyama zitukura nudufi duto dukamuye mumazi yagacuranzwa bwimbuto.',
+              'Bikomatanye nibimera bya fer (ibishyimba, imboga zikiremera cy\'icyatsi) wongeyemo Vavitamini C (imbuto za orange) ngo bizafashe kuzamura absorption kugera kuri 3x.',
+              'Igisha ibikoresho ufite kubuza guha icyayi cyangwa ka kowa abana mugihe cyifunguro kubera ingaruka ikwirakwiza mubuhanga ikigendana kubo yose kugera nkubwo abantu bateka igice kindi rwose bwicwa .',
+              'Koresha imiti yinzoka biba buri mezi 6 zihagararika ibyuka bifite iyingenzi mumibiri bizahaza bigatuma habaho ukugabanya ko gukomera kugera igipimo mbere uyu ndurimo ushyire kubabaye amakuru bisesengura.',
+              'Kora Isuzuma isuzumwa rikoresheje Ubwenge bwubukorano buri mezi matatu 3 yibice byo gukura byihuse kugirango ibyago byavuka bibonekekerwe hakiri kare.'
+            ]
+          }
+        ]
+      },
+      categories: {
+        milestones: { title: 'Dukurikirane', subtitle: 'Henzurirwa gukura' },
+        feeding: { title: 'Imirire byijyanye n\'Imyaka', subtitle: 'Ibyo umwana arya' },
+        nutrition: { title: 'Intungamubiri', subtitle: 'Zifasha gukura neza' },
+        anemia: { title: 'Anemiya n\'iki?', subtitle: 'Birinda ndetse biterwa ni?' },
+        activities: { title: 'Gukina n\'Umwana', subtitle: 'Imikino yumviriza ubwonko' },
+        feedingplan: { title: 'Gahunda y\'Amafunguro', subtitle: 'Incamake yumviriza cyumweru' },
+      }
     },
     result: {
       noResult: 'Nta bisubizo bihari',
@@ -404,10 +710,41 @@ export const translations = {
       recentActivity: 'Ibikorwa bya vuba',
       severityBreakdown: 'Igaburo ry\'ubukana',
     },
-    education: {
-      title: 'Gusobanukirwa Indwara y\'Amaraso',
-      subtitle: "Menya ibimenyetso, kwirinda,\nn'ibiribwa bishobora gufasha.",
-      disclaimer: 'Iyi makuru ni yo nyigisho gusa kandi ntisimbuza inama z\'inzobere mu buzima.',
+    parentDashboard: {
+      heroSub: "Kurikirana ubuzima bw'umwana wawe",
+      monthsOld: "amezi",
+      babySummary: "Incamake y'umwana",
+      sleep: "Kuryama",
+      feeding: "Imirire",
+      growth: "Gukura",
+      noEntries: "Nta makuru ahari",
+      setAge: "Shyiraho imyaka",
+      quickActions: "Ibikorwa byihuse",
+      severeAlert: "Nyamuneka gana ivuriro vuba bishoboka.",
+      moderateAlert: "Teganya gusubira kwa muganga.",
+      healthyMessage: "Komeza imirire ikungahaye ku butare no kwisuzumisha kenshi.",
+      hi: "Muraho",
+      welcome: "Murakaza neza!",
+    },
+    chwDashboard: {
+      title: "Ahabanza CHW",
+      subtitle: "Umujyanama w'Ubuzima",
+      today: "Uyu munsi",
+      total: "Yose",
+      severe: "Ikabije",
+      quickActions: "Ibikorwa byihuse",
+      newScreening: "Isuzuma rishya",
+      viewPatients: "Reba Abarwayi",
+      recentScreenings: "Isuzuma rya vuba",
+      unknown: "Ntabizwi",
+    },
+    guestDashboard: {
+      recentPatients: "Abarwayi ba vuba",
+      seeAll: "Reba byose",
+      unknownPatient: "Umurwayi utazwi",
+      yrs: "imyaka",
+      followUpOverdue: "Gukurikirana byakererewe — ",
+      nextScreening: "Isuzuma ritaha : ",
     },
     profile: {
       title: 'Umwirondoro Wanjye',

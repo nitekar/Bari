@@ -166,6 +166,18 @@ function ResultScreen() {
           <Text style={styles.cardTitle}>Nutritional Guidance</Text>
         </View>
         <Text style={styles.adviceText}>{result.nutrition}</Text>
+        
+        <View style={{ marginTop: spacing.md }}>
+          <Text style={styles.subheading}>Dietary Focus:</Text>
+          <View style={styles.focusRow}>
+            <Ionicons name="add-circle" size={16} color={colors.success} />
+            <Text style={styles.focusText}>Include: Iron-rich foods, Vitamin C</Text>
+          </View>
+          <View style={styles.focusRow}>
+            <Ionicons name="remove-circle" size={16} color={colors.error} />
+            <Text style={styles.focusText}>Avoid: Tannins, excessive dairy close to meals</Text>
+          </View>
+        </View>
       </Card>
 
       {/* Recommended Foods */}
@@ -422,6 +434,22 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     flex: 1,
+  },
+  subheading: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  focusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  focusText: {
+    fontSize: 13,
+    color: colors.textSecondary,
   },
 });
 

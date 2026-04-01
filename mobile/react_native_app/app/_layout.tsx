@@ -21,7 +21,7 @@ import { colors } from '../src/shared/theme';
 import { onAuthStateChanged, getSession, getUserProfile } from '../src/services/supabaseAuth';
 import type { UserRole } from '../src/services/supabaseAuth';
 import { useNetworkStatus } from '../src/shared/hooks/useNetworkStatus';
-import { ErrorBoundary as AppErrorBoundary } from '../src/shared/components';
+import { ErrorBoundary as AppErrorBoundary, LanguageSwitch } from '../src/shared/components';
 import OfflineIndicator from '../src/shared/components/OfflineIndicator';
 import { processSyncQueue } from '../src/services/syncService';
 import { isSupabaseConfigured, supabase } from '../src/services/supabase';
@@ -80,6 +80,7 @@ export default function RootLayout() {
   const setRole = useStore((s) => s.setRole);
   const loadHistoryFromSupabase = useStore((s) => s.loadHistoryFromSupabase);
   const hasSeenOnboarding = useStore((s) => s.hasSeenOnboarding);
+  const hasAcceptedEula = useStore((s) => s.hasAcceptedEula);
   const offlineQueue = useStore((s) => s.offlineQueue);
   const lastSyncedAt = useStore((s) => s.lastSyncedAt);
 
@@ -127,18 +128,25 @@ export default function RootLayout() {
     return unsubscribe;
   }, []);
 
-  // ── Deep link handler: email confirmation ──────────────────────────────────
+  // ── Deep link handler: email confirmation + password reset ────────────────
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     const isValidJwtFormat = (token: string) =>
       /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token);
 
     const handleUrl = async (url: string) => {
-      const fragment = url.split('#')[1] ?? '';
-      const params = new URLSearchParams(fragment);
-      const access_token = params.get('access_token');
-      const refresh_token = params.get('refresh_token');
-      // Validate token format before accepting
+      // Supabase sends tokens either in the URL fragment (#) or query string (?).
+      // Check both so the handler works regardless of Supabase version behavior.
+      const [base, fragmentPart] = url.split('#');
+      const queryPart = base.split('?')[1] ?? '';
+
+      // Merge params from both locations — fragment takes precedence.
+      const fromQuery    = new URLSearchParams(queryPart);
+      const fromFragment = new URLSearchParams(fragmentPart ?? '');
+
+      const access_token  = fromFragment.get('access_token')  ?? fromQuery.get('access_token');
+      const refresh_token = fromFragment.get('refresh_token') ?? fromQuery.get('refresh_token');
+
       if (
         access_token && refresh_token &&
         isValidJwtFormat(access_token) && isValidJwtFormat(refresh_token)
@@ -168,25 +176,41 @@ export default function RootLayout() {
     const inParent   = segments[0] === '(parent)';
     const onAuth     = segments[0] === 'auth';
     const onBoarding = segments[0] === 'onboarding';
+    const onEula     = segments[0] === 'eula-welcome';
 
     if (!hasSeenOnboarding && !onBoarding) { router.replace('/onboarding'); return; }
 
     if (hasSeenOnboarding) {
-      if (!session && !onAuth && !onBoarding) { router.replace('/auth'); return; }
-      if (session && role) {
+      // 1. EULA Interceptor for Guests (!session) and Parents
+      const needsEula = !hasAcceptedEula && (!session || role === 'parent');
+      if (needsEula && !onAuth && !onBoarding && !onEula) {
+        router.replace('/eula-welcome');
+        return;
+      }
+
+      if (!session) {
+        if (!onAuth && !onBoarding && !inParent && !onEula) {
+          router.replace('/(parent)/education');
+        }
+        return;
+      }
+      if (session && role && !onEula) {
         if (onAuth) {
           if (role === 'admin')  { router.replace('/(admin)'); return; }
           if (role === 'parent') { router.replace('/(parent)'); return; }
           router.replace('/(chw)'); return;
         }
-        // Redirect CHW users away from legacy (tabs) into (chw)
-        if (inTabs && role === 'chw') { router.replace('/(chw)'); return; }
         // Redirect users to their role-group if mismatched
+        if (inTabs && role === 'chw') { router.replace('/(chw)'); return; }
         if (inTabs && role === 'admin')  { router.replace('/(admin)'); return; }
         if (inTabs && role === 'parent') { router.replace('/(parent)'); return; }
+        
+        if (inAdmin && role !== 'admin') { router.replace(role === 'parent' ? '/(parent)' : '/(chw)'); return; }
+        if (inChw && role !== 'chw') { router.replace(role === 'parent' ? '/(parent)' : '/(admin)'); return; }
+        if (inParent && role !== 'parent') { router.replace(role === 'chw' ? '/(chw)' : '/(admin)'); return; }
       }
     }
-  }, [session, role, segments, isReady, hasSeenOnboarding]);
+  }, [session, role, segments, isReady, hasSeenOnboarding, hasAcceptedEula]);
 
   if (!isReady) return <LoadingSplash />;
 
@@ -208,10 +232,12 @@ export default function RootLayout() {
           headerShadowVisible: false,
           contentStyle: { backgroundColor: colors.background },
           animation: 'slide_from_right',
+          headerRight: () => <LanguageSwitch />,
         }}
       >
         <Stack.Screen name="onboarding"    options={{ headerShown: false }} />
         <Stack.Screen name="auth"          options={{ headerShown: false }} />
+        <Stack.Screen name="eula-welcome"  options={{ headerShown: false, presentation: 'fullScreenModal' }} />
         <Stack.Screen name="(tabs)"        options={{ headerShown: false }} />
         <Stack.Screen name="(chw)"         options={{ headerShown: false }} />
         <Stack.Screen name="(admin)"       options={{ headerShown: false }} />

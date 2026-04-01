@@ -49,6 +49,7 @@ module.exports = ({ config }) => {
     },
     plugins: [
       "expo-router",
+      "expo-font",
       "expo-secure-store",
       [
         "expo-image-picker",

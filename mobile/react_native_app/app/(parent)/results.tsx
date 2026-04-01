@@ -15,6 +15,9 @@ interface RiskInfo {
   bg: string;
   icon: keyof typeof Ionicons.glyphMap;
   guidance: string;
+  nutrition: string;
+  include: string;
+  avoid: string;
 }
 
 function getRisk(prediction: string): RiskInfo {
@@ -26,7 +29,10 @@ function getRisk(prediction: string): RiskInfo {
         color: colors.error,
         bg: colors.error + '18',
         icon: 'alert-circle',
-        guidance: 'Please visit a health facility immediately. Your child may need medical treatment.',
+        guidance: 'Please visit a health facility immediately. Your child needs medical treatment.',
+        nutrition: 'Requires clinical high-dose iron therapy. Do not rely solely on diet.',
+        include: 'Prescription iron supplements, Vitamin C',
+        avoid: 'Polyphenols, excessive cow\'s milk',
       };
     case 'Moderate':
       return {
@@ -35,6 +41,9 @@ function getRisk(prediction: string): RiskInfo {
         bg: '#e67e2218',
         icon: 'warning',
         guidance: 'Schedule an appointment with your community health worker within the next few days.',
+        nutrition: 'Focus heavily on bioavailable heme-iron sources and fortify daily meals.',
+        include: 'Red meat, dark leafy greens, citrus fruits',
+        avoid: 'Tea/coffee with meals, phytates',
       };
     case 'Mild':
       return {
@@ -43,6 +52,9 @@ function getRisk(prediction: string): RiskInfo {
         bg: '#f1c40f18',
         icon: 'information-circle',
         guidance: 'Increase iron-rich foods in your child\'s diet. Re-screen in 30 days.',
+        nutrition: 'A slight drop in iron. Easily manageable with dietary adjustments.',
+        include: 'Beans, lentils, fortified cereals, eggs',
+        avoid: 'Excessive milk displacing solid foods',
       };
     default:
       return {
@@ -51,6 +63,9 @@ function getRisk(prediction: string): RiskInfo {
         bg: colors.primary + '18',
         icon: 'checkmark-circle',
         guidance: 'Great! Continue with a balanced, iron-rich diet and regular check-ups.',
+        nutrition: 'Maintains optimal hemoglobin levels naturally.',
+        include: 'Balanced diet, assorted proteins',
+        avoid: 'N/A',
       };
   }
 }
@@ -82,6 +97,25 @@ export default function ParentResultsScreen() {
                 <Text style={styles.date}>{new Date(r.date).toLocaleDateString()}</Text>
               </View>
               <Text style={styles.guidance}>{risk.guidance}</Text>
+              
+              <View style={styles.nutritionBox}>
+                <View style={styles.nutritionHeader}>
+                  <Ionicons name="nutrition-outline" size={16} color={colors.accentDark} />
+                  <Text style={styles.nutritionTitle}>Tailored Nutrition</Text>
+                </View>
+                <Text style={styles.nutritionText}>{risk.nutrition}</Text>
+                <View style={styles.focusRow}>
+                  <Ionicons name="add-circle" size={14} color={colors.success} />
+                  <Text style={styles.focusText}><Text style={{fontWeight:'bold'}}>Include:</Text> {risk.include}</Text>
+                </View>
+                {risk.avoid !== 'N/A' && (
+                  <View style={styles.focusRow}>
+                    <Ionicons name="remove-circle" size={14} color={colors.error} />
+                    <Text style={styles.focusText}><Text style={{fontWeight:'bold'}}>Avoid:</Text> {risk.avoid}</Text>
+                  </View>
+                )}
+              </View>
+
               {r.patientName && (
                 <View style={styles.nameRow}>
                   <Ionicons name="person-outline" size={12} color={colors.textLight} />
@@ -112,6 +146,12 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 12, fontWeight: '700' },
   date: { fontSize: 12, color: colors.textLight },
   guidance: { fontSize: 14, color: colors.textSecondary, lineHeight: 21 },
+  nutritionBox: { marginTop: spacing.md, backgroundColor: colors.surfaceElevated, padding: spacing.sm, borderRadius: borderRadius.md },
+  nutritionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  nutritionTitle: { fontSize: 13, fontWeight: '700', color: colors.accentDark },
+  nutritionText: { fontSize: 13, color: colors.textSecondary, marginBottom: 6, lineHeight: 18 },
+  focusRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginBottom: 2 },
+  focusText: { fontSize: 12, color: colors.textLight, flex: 1 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm },
   nameText: { fontSize: 12, color: colors.textLight },
 });

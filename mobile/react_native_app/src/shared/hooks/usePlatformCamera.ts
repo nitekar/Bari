@@ -36,6 +36,28 @@ export function usePlatformCamera() {
     return null;
   }, []);
 
+  const takePhotoNative = useCallback(async (): Promise<string | null> => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Permission Required',
+        'Please grant camera access to take conjunctiva images.',
+      );
+      return null;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      return result.assets[0].uri;
+    }
+    return null;
+  }, []);
+
   const pickImageWeb = useCallback((): Promise<string | null> => {
     return new Promise((resolve) => {
       // Create a hidden file input if it doesn't exist
@@ -79,5 +101,12 @@ export function usePlatformCamera() {
     return pickImageNative();
   }, [pickImageNative, pickImageWeb]);
 
-  return { pickImage };
+  const takePhoto = useCallback(async (): Promise<string | null> => {
+    if (Platform.OS === 'web') {
+      return pickImageWeb(); // Web uses standard file input fallback
+    }
+    return takePhotoNative();
+  }, [takePhotoNative, pickImageWeb]);
+
+  return { pickImage, takePhoto };
 }

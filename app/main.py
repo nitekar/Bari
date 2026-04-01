@@ -4,11 +4,10 @@ import logging
 import os
 import secrets
 from contextlib import asynccontextmanager
-from typing import Any, Annotated
+from typing import Any
 
 import joblib
-import numpy as np
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -16,28 +15,6 @@ from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-
-from app.schemas.response import HealthResponse, PredictionResponse
-from app.services.inference import (
-    build_probabilities_dict,
-    build_visual_probabilities_dict,
-    predict_rf,
-    predict_visual,
-)
-from app.services.inference import (
-    predict_fusion,
-    late_fusion_weighted_average,
-    compare_fusion_vs_individuals,
-    adapt_tab_array_for_interpreter,
-)
-from app.services.nutrition import get_full_guidance, get_binary_guidance
-from app.services.preprocessing import (
-    build_nh_scaled,
-    build_wh_scaled,
-    preprocess_image_bytes,
-)
-from app.utils.image_utils import validate_image_content_type
-from utils.nutrition import build_structured_recommendations
 
 logging.basicConfig(
     level=logging.INFO,

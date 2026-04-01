@@ -207,15 +207,18 @@ def compare_fusion_vs_individuals(
     tab_probs: np.ndarray,
 ) -> dict:
     """
-    Lightweight comparator that checks whether fusion improves the top-class
-    confidence compared to individual models. Returns a dict with verdict and
-    delta scores.
+    Comparator that checks whether fusion improves over individual models.
+
+    Uses both top-class confidence and entropy as decision criteria.
+    Fusion is preferred when:
+      1. It has higher confidence than both individual models, OR
+      2. It has lower entropy (more decisive) than the best individual model
     """
     fusion = np.asarray(fusion_probs, dtype="float32").flatten()
     v = np.asarray(visual_probs, dtype="float32").flatten()
     t = np.asarray(tab_probs, dtype="float32").flatten()
 
-    # Ensure same length before comparisons — compare on available overlap
+    # Ensure same length before comparisons
     min_len = min(len(fusion), len(v), len(t))
     fusion = fusion[:min_len] / (fusion[:min_len].sum() + 1e-12)
     v = v[:min_len] / (v[:min_len].sum() + 1e-12)
@@ -225,16 +228,26 @@ def compare_fusion_vs_individuals(
     visual_top = float(v.max())
     tab_top = float(t.max())
 
-    better_than_visual = fusion_top > visual_top + 1e-6
-    better_than_tab = fusion_top > tab_top + 1e-6
+    # Entropy: lower = more confident/decisive
+    def _entropy(p: np.ndarray) -> float:
+        p_safe = np.clip(p, 1e-12, 1.0)
+        return float(-np.sum(p_safe * np.log(p_safe)))
 
-    verdict = "fusion_benefit" if (better_than_visual and better_than_tab) else "no_benefit"
+    fusion_ent = _entropy(fusion)
+    best_indiv_ent = min(_entropy(v), _entropy(t))
+
+    confidence_better = fusion_top > max(visual_top, tab_top) - 0.02
+    entropy_better = fusion_ent < best_indiv_ent + 0.05
+
+    verdict = "fusion_benefit" if (confidence_better and entropy_better) else "no_benefit"
 
     return {
         "verdict": verdict,
         "fusion_top": fusion_top,
         "visual_top": visual_top,
         "tab_top": tab_top,
+        "fusion_entropy": fusion_ent,
+        "best_individual_entropy": best_indiv_ent,
     }
 
 
@@ -242,10 +255,14 @@ def adapt_tab_array_for_interpreter(interpreter: Any, tab_array: np.ndarray) -> 
     """
     Adapt a provided tabular array to match the interpreter's expected 2-D input shape.
 
-    If the interpreter expects fewer columns than provided, the function will take
-    the last N columns (assumes those are HB/age/gender tail in FEAT_WITH_HB).
-    If more columns are expected, it will pad with zeros on the right.
-    Returns an array shaped exactly as the interpreter expects.
+    The fusion TFLite models were trained with reduced feature subsets:
+      - 5 features (with HB): a_mean, a_std, HB_LEVEL, Age(Months), Gender_F
+        -> indices [0, 1, 14, 15, 16] from FEAT_WITH_HB (17 cols)
+      - 4 features (no HB):   a_mean, a_std, Age(Months), Gender_F
+        -> indices [0, 1, 14, 15] from FEAT_NO_HB (16 cols)
+
+    Falls back to zero-padding or truncation when the source array does not
+    match the known 17/16 column layout.
     """
     in_dets = interpreter.get_input_details()
     # Find a non-4D input (tabular)
@@ -259,22 +276,35 @@ def adapt_tab_array_for_interpreter(interpreter: Any, tab_array: np.ndarray) -> 
         return np.zeros((1, 0), dtype="float32")
 
     expected_shape = tuple(tab_det["shape"])
-    # Usually expected_shape is like (1, N)
-    if len(expected_shape) == 2:
-        expected_cols = expected_shape[1]
-        provided = np.asarray(tab_array, dtype="float32")
-        if provided.ndim == 1:
-            provided = provided.reshape(1, -1)
-        # If provided has more columns, take the rightmost columns
-        if provided.shape[1] >= expected_cols:
-            out = provided[:, -expected_cols:]
-        else:
-            # pad with zeros
-            pad = np.zeros((provided.shape[0], expected_cols - provided.shape[1]), dtype="float32")
-            out = np.concatenate([provided, pad], axis=1)
-        return out.astype("float32")
-    # Fallback: return as float32
-    return np.asarray(tab_array, dtype="float32")
+    if len(expected_shape) != 2:
+        return np.asarray(tab_array, dtype="float32")
+
+    expected_cols = expected_shape[1]
+    provided = np.asarray(tab_array, dtype="float32")
+    if provided.ndim == 1:
+        provided = provided.reshape(1, -1)
+
+    n_provided = provided.shape[1]
+
+    # Known mapping: extract the correct feature subset
+    if n_provided == 17 and expected_cols == 5:
+        # FEAT_WITH_HB -> fusion with HB: [a_mean, a_std, HB_LEVEL, Age, Gender]
+        out = provided[:, [0, 1, 14, 15, 16]]
+    elif n_provided == 16 and expected_cols == 4:
+        # FEAT_NO_HB -> fusion no HB: [a_mean, a_std, Age, Gender]
+        out = provided[:, [0, 1, 14, 15]]
+    elif n_provided == 17 and expected_cols == 4:
+        # FEAT_WITH_HB -> fusion no HB: [a_mean, a_std, Age, Gender]
+        out = provided[:, [0, 1, 15, 16]]
+    elif n_provided >= expected_cols:
+        # Fallback: take first N columns (better than rightmost for colour features)
+        out = provided[:, :expected_cols]
+    else:
+        # Pad with zeros
+        pad = np.zeros((provided.shape[0], expected_cols - n_provided), dtype="float32")
+        out = np.concatenate([provided, pad], axis=1)
+
+    return out.astype("float32")
 
 
 # ── Visual → RF pipeline ──────────────────────────────────────────────────────

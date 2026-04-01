@@ -14,8 +14,10 @@ fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 python-multipart>=0.0.6
 pydantic>=2.0.0
+slowapi>=0.1.9
 
 # Utilities
 joblib>=1.2.0
 pytest>=7.0.0
 imbalanced-learn>=0.10.1
+python-dotenv>=1.0.0

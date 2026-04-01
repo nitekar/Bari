@@ -1,9 +1,5 @@
 {
-  "dependencies": {
-    "expo": "^55.0.9"
-  },
-  "devDependencies": {
-    "@types/react": "~19.2.10",
-    "typescript": "~5.9.2"
-  }
+  "private": true,
+  "description": "Bari Anemia Screening - Python backend (see mobile/react_native_app for the mobile app)",
+  "scripts": {}
 }

@@ -245,6 +245,7 @@ export default function RootLayout() {
         <Stack.Screen name="image-capture" options={{ title: t.tabs.screening }} />
         <Stack.Screen name="result"        options={{ title: 'Results' }} />
         <Stack.Screen name="referral"      options={{ title: t.referral.referralLetter }} />
+        <Stack.Screen name="book-followup" options={{ title: 'Book Follow-Up' }} />
         <Stack.Screen name="settings"      options={{ title: t.settings.title }} />
         <Stack.Screen name="legal"         options={{ title: 'Legal' }} />
         <Stack.Screen name="parent-sleep"       options={{ title: 'Sleep Log' }} />

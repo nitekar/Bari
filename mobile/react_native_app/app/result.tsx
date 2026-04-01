@@ -16,6 +16,7 @@ import { severityColorMap, nextScreeningDays } from '../src/shared/theme/colors'
 import { Card, ResultBadge, Button } from '../src/shared/components';
 import { useStore } from '../src/store/useStore';
 import { useAnalyticsStore } from '../src/store/analyticsStore';
+import { useTranslation } from '../src/i18n';
 
 // ── Nutrition icon map ──
 const nutritionIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -28,6 +29,7 @@ const nutritionIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
 
 function ResultScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const result = useStore((s) => s.result);
   const reset = useStore((s) => s.reset);
   const trackEvent = useAnalyticsStore((s) => s.trackEvent);
@@ -140,15 +142,27 @@ function ResultScreen() {
               </Text>
             </View>
           </View>
-          <Button
-            title="View Referral Options"
-            onPress={() => {
-              trackEvent('referral_opened', { severity: result.prediction });
-              router.push('/referral');
-            }}
-            variant={result.prediction === 'Severe' ? 'danger' : 'primary'}
-            icon={<Ionicons name="arrow-forward" size={18} color={colors.white} />}
-          />
+          <View style={{ flexDirection: 'row', gap: spacing.md }}>
+            <Button
+              title="Referrals"
+              onPress={() => {
+                trackEvent('referral_opened', { severity: result.prediction });
+                router.push('/referral');
+              }}
+              variant="outline"
+              style={{ flex: 1 }}
+              icon={<Ionicons name="medical" size={18} color={colors.primary} />}
+            />
+            <Button
+              title={t.bookFollowup?.title || 'Book Follow-Up'}
+              onPress={() => {
+                router.push('/book-followup');
+              }}
+              variant={result.prediction === 'Severe' ? 'danger' : 'primary'}
+              style={{ flex: 1 }}
+              icon={<Ionicons name="calendar" size={18} color={colors.white} />}
+            />
+          </View>
         </Card>
       )}
 

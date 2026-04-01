@@ -71,6 +71,17 @@ export interface FeedingLog {
   date: string;
 }
 
+// ── Appointment ──
+export interface Appointment {
+  id: string;
+  clinicName: string;
+  date: string;
+  time: string;
+  notes: string;
+  status: 'upcoming' | 'completed' | 'cancelled';
+}
+
+
 interface AppState {
   // ── App settings ──
   language: Language;
@@ -101,6 +112,9 @@ interface AppState {
   sleepLogs: SleepLog[];
   feedingLogs: FeedingLog[];
 
+  // ── Appointments ──
+  appointments: Appointment[];
+
   // ── Offline ──
   offlineQueue: QueuedRequest[];
   lastSyncedAt: Date | null;
@@ -126,6 +140,7 @@ interface AppState {
   clearHistory: () => void;
   addSleepLog: (log: SleepLog) => void;
   addFeedingLog: (log: FeedingLog) => void;
+  addAppointment: (appt: Appointment) => void;
   addToQueue: (request: QueuedRequest) => void;
   removeFromQueue: (id: string) => void;
   setLastSyncedAt: (date: Date) => void;
@@ -149,6 +164,7 @@ const initialState = {
   history: [] as ScreeningRecord[],
   sleepLogs: [] as SleepLog[],
   feedingLogs: [] as FeedingLog[],
+  appointments: [] as Appointment[],
   offlineQueue: [] as QueuedRequest[],
   lastSyncedAt: null as Date | null,
   completedItems: [] as string[],
@@ -263,6 +279,12 @@ export const useStore = create<AppState>()(
     }
   },
 
+  addAppointment: (appt) => {
+    set((state) => ({
+      appointments: [appt, ...state.appointments].slice(0, 100),
+    }));
+  },
+
   addToQueue: (request) =>
     set((state) => ({
       offlineQueue: [...state.offlineQueue, request],
@@ -306,6 +328,7 @@ export const useStore = create<AppState>()(
         childGender: state.childGender,
         // Persist so past results are viewable offline and queue survives restarts
         history: state.history,
+        appointments: state.appointments,
         offlineQueue: state.offlineQueue,
         lastSyncedAt: state.lastSyncedAt,
         completedItems: state.completedItems,

@@ -43,6 +43,21 @@ export async function getScreeningHistory(
   return (data ?? []) as ScreeningRow[];
 }
 
+/**
+ * Fetch ALL screening records across all users (admin only).
+ * Requires the "Admins view all screenings" RLS policy on the screenings table.
+ */
+export async function getAllScreenings(limit = 500): Promise<ScreeningRow[]> {
+  const { data, error } = await supabase
+    .from('screenings')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(`Failed to fetch all screenings: ${error.message}`);
+  return (data ?? []) as ScreeningRow[];
+}
+
 // ── Analytics Events ─────────────────────────────────────────────────────────
 
 /**

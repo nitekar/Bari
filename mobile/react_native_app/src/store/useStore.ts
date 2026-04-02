@@ -230,6 +230,8 @@ export const useStore = create<AppState>()(
         age: row.age,
         gender: row.gender,
         imageUrl: row.image_url,
+        patientName: row.patient_name ?? undefined,
+        patientLocation: row.patient_location ?? undefined,
       }));
       set({ history: records });
     } catch (err: any) {

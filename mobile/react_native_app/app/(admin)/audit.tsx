@@ -1,12 +1,14 @@
 /**
  * app/(admin)/audit.tsx — Recent prediction logs with filter tabs
+ * Fetches ALL screenings from Supabase (not just the admin's own).
  */
-import React, { useState, useMemo } from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useMemo, useEffect } from 'react';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../src/shared/theme';
 import { Card } from '../../src/shared/components';
-import { useStore } from '../../src/store/useStore';
+import { getAllScreenings } from '../../src/services/supabaseDb';
+import type { ScreeningRow } from '../../src/services/types';
 
 type FilterTab = 'All' | 'Severe' | 'Moderate';
 const TABS: FilterTab[] = ['All', 'Severe', 'Moderate'];
@@ -19,13 +21,22 @@ function severityColor(p: string) {
 }
 
 export default function AuditScreen() {
-  const history = useStore((s) => s.history);
+  const [rows, setRows] = useState<ScreeningRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
 
+  useEffect(() => {
+    getAllScreenings()
+      .then(setRows)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
   const filtered = useMemo(() => {
-    if (activeTab === 'All') return history;
-    return history.filter(r => r.prediction === activeTab);
-  }, [history, activeTab]);
+    if (activeTab === 'All') return rows;
+    return rows.filter(r => r.prediction === activeTab);
+  }, [rows, activeTab]);
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -45,40 +56,49 @@ export default function AuditScreen() {
         ))}
       </View>
 
-      {filtered.length === 0 ? (
+      {loading && <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: spacing.xl }} />}
+
+      {error && (
+        <Card style={{ backgroundColor: colors.error + '10', alignItems: 'center', paddingVertical: spacing.xl }}>
+          <Ionicons name="lock-closed-outline" size={24} color={colors.error} />
+          <Text style={{ color: colors.error, marginTop: spacing.sm, textAlign: 'center' }}>{error}</Text>
+        </Card>
+      )}
+
+      {!loading && !error && filtered.length === 0 && (
         <View style={styles.empty}>
           <Ionicons name="document-text-outline" size={48} color={colors.textLight} />
           <Text style={styles.emptyText}>No records for this filter</Text>
         </View>
-      ) : (
-        filtered.map(r => (
-          <Card key={r.id} style={styles.card}>
-            <View style={styles.headerRow}>
-              <View style={[styles.badge, { backgroundColor: severityColor(r.prediction) + '20' }]}>
-                <Text style={[styles.badgeText, { color: severityColor(r.prediction) }]}>{r.prediction}</Text>
-              </View>
-              <Text style={styles.timestamp}>{new Date(r.date).toLocaleString()}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Ionicons name="person-outline" size={14} color={colors.textLight} />
-              <Text style={styles.detail}>{r.patientName ?? 'Anonymous'}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Ionicons name="layers-outline" size={14} color={colors.textLight} />
-              <Text style={styles.detail}>{r.mode} · {Math.round(r.confidence * 100)}% confidence</Text>
-            </View>
-            {r.patientLocation && (
-              <View style={styles.detailRow}>
-                <Ionicons name="location-outline" size={14} color={colors.textLight} />
-                <Text style={styles.detail}>{r.patientLocation}</Text>
-              </View>
-            )}
-            <View style={styles.idRow}>
-              <Text style={styles.idText}>ID: {r.id}</Text>
-            </View>
-          </Card>
-        ))
       )}
+
+      {filtered.map(r => (
+        <Card key={r.id} style={styles.card}>
+          <View style={styles.headerRow}>
+            <View style={[styles.badge, { backgroundColor: severityColor(r.prediction) + '20' }]}>
+              <Text style={[styles.badgeText, { color: severityColor(r.prediction) }]}>{r.prediction}</Text>
+            </View>
+            <Text style={styles.timestamp}>{new Date(r.created_at).toLocaleString()}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Ionicons name="person-outline" size={14} color={colors.textLight} />
+            <Text style={styles.detail}>{r.patient_name ?? 'Anonymous'}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Ionicons name="layers-outline" size={14} color={colors.textLight} />
+            <Text style={styles.detail}>{r.mode} · {Math.round(r.confidence * 100)}% confidence</Text>
+          </View>
+          {r.patient_location && (
+            <View style={styles.detailRow}>
+              <Ionicons name="location-outline" size={14} color={colors.textLight} />
+              <Text style={styles.detail}>{r.patient_location}</Text>
+            </View>
+          )}
+          <View style={styles.idRow}>
+            <Text style={styles.idText}>ID: {r.id}</Text>
+          </View>
+        </Card>
+      ))}
 
       <View style={{ height: 100 }} />
     </ScrollView>

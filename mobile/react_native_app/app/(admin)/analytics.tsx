@@ -1,12 +1,13 @@
 /**
  * app/(admin)/analytics.tsx — Severity distribution bars
  */
-import React, { useMemo } from 'react';
-import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import React, { useMemo, useEffect, useState } from 'react';
+import { ScrollView, View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../src/shared/theme';
 import { Card } from '../../src/shared/components';
-import { useStore } from '../../src/store/useStore';
+import { getAllScreenings } from '../../src/services/supabaseDb';
+import type { ScreeningRow } from '../../src/services/types';
 
 const SEVERITY_ORDER = ['Non-Anemic', 'Mild', 'Moderate', 'Severe', 'Anemic'];
 const SEVERITY_COLORS: Record<string, string> = {
@@ -18,11 +19,19 @@ const SEVERITY_COLORS: Record<string, string> = {
 };
 
 export default function AnalyticsScreen() {
-  const history = useStore((s) => s.history);
+  const [rows, setRows] = useState<ScreeningRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getAllScreenings()
+      .then(setRows)
+      .catch((e) => console.warn('Analytics fetch failed:', e.message))
+      .finally(() => setLoading(false));
+  }, []);
 
   const distribution = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const r of history) {
+    for (const r of rows) {
       counts[r.prediction] = (counts[r.prediction] ?? 0) + 1;
     }
     return Object.entries(counts).sort((a, b) => {
@@ -30,22 +39,23 @@ export default function AnalyticsScreen() {
       const bi = SEVERITY_ORDER.indexOf(b[0]);
       return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
     });
-  }, [history]);
+  }, [rows]);
 
-  const total = history.length;
+  const total = rows.length;
 
-  // Mode breakdown
   const modeCount = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const r of history) {
+    for (const r of rows) {
       counts[r.mode] = (counts[r.mode] ?? 0) + 1;
     }
     return counts;
-  }, [history]);
+  }, [rows]);
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <Text style={styles.pageTitle}>Analytics</Text>
+
+      {loading && <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: spacing.xl }} />}
 
       {/* Summary */}
       <Card style={styles.summaryCard}>

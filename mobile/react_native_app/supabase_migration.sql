@@ -40,6 +40,11 @@ alter table screenings enable row level security;
 alter table analytics_events enable row level security;
 
 -- Screenings policies
+drop policy if exists "Admins view all screenings" on screenings;
+create policy "Admins view all screenings"
+  on screenings for select
+  using (public.is_admin());
+
 drop policy if exists "Users see own screenings" on screenings;
 create policy "Users see own screenings"
   on screenings for select

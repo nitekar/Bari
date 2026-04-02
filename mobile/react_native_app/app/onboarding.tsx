@@ -6,11 +6,11 @@ import {
   View,
   Text,
   StyleSheet,
-  Dimensions,
   ScrollView,
   TouchableOpacity,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,8 +18,6 @@ import { colors, spacing, borderRadius } from '../src/shared/theme';
 import { Logo } from '../src/shared/components';
 import { useStore } from '../src/store/useStore';
 import { useTranslation } from '../src/i18n';
-
-const { width: SCREEN_W } = Dimensions.get('window');
 
 interface Slide {
   icon: keyof typeof Ionicons.glyphMap;
@@ -60,6 +58,7 @@ const BG_COLORS = [
 ];
 
 export default function OnboardingScreen() {
+  const { width: SCREEN_W } = useWindowDimensions();
   const router = useRouter();
   const { t } = useTranslation();
   const setHasSeenOnboarding = useStore((s) => s.setHasSeenOnboarding);

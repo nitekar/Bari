@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   // ── Slides ──
   slides: { flex: 1 },
   slide: {
-    width: SCREEN_W,
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,

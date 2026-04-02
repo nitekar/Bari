@@ -35,6 +35,12 @@ Thumbs.db
 *.log
 npm-debug.log*
 
+# Stray root-level artifacts
+/package.json
+/package-lock.json
+/test_run_output.txt
+/node_modules/
+
 # Build artifacts
 build/
 *.apk

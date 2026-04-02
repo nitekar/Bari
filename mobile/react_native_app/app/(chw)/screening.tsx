@@ -8,7 +8,7 @@
  *
  * Layout: step cards + fixed bottom action bar
  */
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -104,6 +104,7 @@ export default function ScreeningScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { state, actions, derived } = useScreeningForm();
+  const [hasConsent, setHasConsent] = useState(false);
 
   const steps = state.mode === 'quick' ? [derived.hasImage] : [true, derived.hasAge, derived.hasImage];
   const completedSteps = steps.filter(Boolean).length;
@@ -265,6 +266,22 @@ export default function ScreeningScreen() {
           </View>
         )}
 
+        {/* ── Consent Checkbox ── */}
+        <TouchableOpacity
+          style={styles.consentRow}
+          onPress={() => setHasConsent(!hasConsent)}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={hasConsent ? 'checkbox' : 'square-outline'}
+            size={24}
+            color={hasConsent ? colors.primaryDark : colors.border}
+          />
+          <Text style={styles.consentText}>
+            I confirm that I have explained the Bari EULA / Privacy terms, and the parent or guardian has provided explicit consent to capture and process this child's health data and imagery.
+          </Text>
+        </TouchableOpacity>
+
         {/* ── Action bar moved inside scrollview to prevent overlap ── */}
         <View style={styles.actionBarEmbedded}>
           <View style={styles.actionInner}>
@@ -277,17 +294,17 @@ export default function ScreeningScreen() {
               </Text>
             </View>
             <TouchableOpacity
-              style={[styles.analyseBtn, !derived.canSubmit && styles.analyseBtnDisabled]}
+              style={[styles.analyseBtn, (!derived.canSubmit || !hasConsent) && styles.analyseBtnDisabled]}
               onPress={actions.handleSubmit}
-              disabled={!derived.canSubmit || derived.isLoading}
+              disabled={!derived.canSubmit || !hasConsent || derived.isLoading}
               activeOpacity={0.85}
             >
               <Ionicons
                 name="pulse-outline"
                 size={18}
-                color={derived.canSubmit ? colors.white : colors.disabled}
+                color={(derived.canSubmit && hasConsent) ? colors.white : colors.disabled}
               />
-              <Text style={[styles.analyseBtnText, !derived.canSubmit && styles.analyseBtnTextDisabled]}>
+              <Text style={[styles.analyseBtnText, (!derived.canSubmit || !hasConsent) && styles.analyseBtnTextDisabled]}>
                 {t.screening.startScreening}
               </Text>
             </TouchableOpacity>
@@ -420,6 +437,15 @@ const styles = StyleSheet.create({
   errorText: { ...typography.caption, color: colors.error, flex: 1 },
 
   // Action bar (embedded)
+  consentRow: {
+    flexDirection: 'row', alignItems: 'flex-start',
+    gap: spacing.sm, marginHorizontal: spacing.sm,
+    marginBottom: spacing.md, paddingHorizontal: spacing.xs,
+  },
+  consentText: {
+    ...typography.caption, color: colors.textSecondary,
+    lineHeight: 18, flex: 1, paddingTop: 2,
+  },
   actionBarEmbedded: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,

@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "Anemia Screening",
+    "slug": "anemia-screening-app",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "scheme": "anemia-screening",
+    "splash": {
+      "backgroundColor": "#FAFAFA"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bari.anemiscreening",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to select conjunctiva images for anemia screening.",
+        "NSCameraUsageDescription": "We need camera access to capture conjunctiva images for anemia screening."
+      }
+    },
+    "android": {
+      "package": "com.bari.anemiscreening",
+      "adaptiveIcon": {
+        "backgroundColor": "#FAFAFA"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "plugins": [
+      "expo-asset",
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Anemia Screening to access your photos for conjunctiva image analysis.",
+          "cameraPermission": "Allow Anemia Screening to use the camera to capture conjunctiva images."
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "supabaseUrl": "https://clmvkxgmpytgztthrdmk.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsbXZreGdtcHl0Z3p0dGhyZG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjI0OTUsImV4cCI6MjA4OTczODQ5NX0.1yr3LnYUnqlh6yahH0a7odjaPugRkiXMPZ_81yp4fiw",
+      "apiBaseUrl": "https://web-production-c7c1.up.railway.app",
+      "eas": {
+        "projectId": "25e00d49-367f-4807-8d33-6c6e8db1d66b"
+      }
+    },
+    "owner": "niteka"
+  }
+}

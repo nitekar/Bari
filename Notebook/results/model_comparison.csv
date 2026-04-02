@@ -1,0 +1,2 @@
+model,train_f1_macro,val_f1_macro,test_f1_macro,baseline_test_f1_macro
+random_forest,0.33635201016736194,0.2860003061087834,0.24526467684362419,0.14321608040201006

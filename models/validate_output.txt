@@ -1,0 +1,9 @@
+Checking: models\saved_models\multimodal_model.tflite
+  ERROR loading models\saved_models\multimodal_model.tflite: No module named 'tflite_runtime'
+Checking: models\saved_models\multimodal_no_hb_model.tflite
+  ERROR loading models\saved_models\multimodal_no_hb_model.tflite: No module named 'tflite_runtime'
+Checking: models\saved_models\tabular_rf.pkl
+  ERROR loading models\saved_models\tabular_rf.pkl: No module named 'joblib'
+Checking: models\saved_models\visual_model.tflite
+  ERROR loading models\saved_models\visual_model.tflite: No module named 'tflite_runtime'
+Report saved to: C:\Users\USER\Capstone\Bari\models\artifact_validation_report.csv

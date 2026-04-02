@@ -1,0 +1,19 @@
+# Root-level EAS ignore — exclude everything except the mobile project
+# EAS Build only needs mobile/react_native_app/
+.venv311/
+.venv/
+venv/
+*.py
+*.ipynb
+data/
+models/
+app/
+api/
+utils/
+tests/
+notebooks/
+__pycache__/
+*.egg-info/
+requirements*.txt
+Dockerfile
+railway.toml

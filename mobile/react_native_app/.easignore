@@ -1,0 +1,7 @@
+# Exclude files unnecessary for EAS builds to reduce archive size
+dist/
+.expo/
+node_modules/.cache/
+android/
+ios/
+*.log

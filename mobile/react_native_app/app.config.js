@@ -66,7 +66,7 @@ module.exports = ({ config }) => {
       apiBaseUrl: process.env.API_BASE_URL || "https://YOUR_BACKEND_URL",
       apiKey: process.env.API_KEY || "",
       eas: {
-        projectId: "25e00d49-367f-4807-8d33-6c6e8db1d66b",
+        projectId: "2f9e8333-0978-4a26-b9c4-18a9fc390095",
       },
     },
     experiments: {

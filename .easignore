@@ -1,5 +1,6 @@
 # Root-level EAS ignore — only used when running eas build from the git root
 # Excludes Python/backend files; keeps mobile/react_native_app/
+.expo/
 .venv311/
 .venv/
 venv/

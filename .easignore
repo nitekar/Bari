@@ -1,11 +1,24 @@
-# Root-level EAS ignore — only used when running eas build from the git root
+# Root-level EAS ignore - only used when running eas build from the git root
 # Excludes Python/backend files; keeps mobile/react_native_app/
+.git/
+.github/
+.vscode/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.idea/
 .expo/
+node_modules/
 .venv311/
 .venv/
 venv/
 data/
+models/
 Notebook/
+api/
+app/
+nutrition/
+utils/
 scripts/
 tests/
 __pycache__/
@@ -13,3 +26,4 @@ __pycache__/
 *.ipynb
 *.egg-info/
 *.log
+dist/

@@ -25,6 +25,7 @@ Bari is a cross-platform anemia screening application that combines a multimodal
 12. [Generating Model Files](#generating-model-files)
 13. [Dataset Citation](#dataset-citation)
 14. [Clinical Disclaimer](#clinical-disclaimer)
+15. [Moderator / Reviewer Quick Start](#moderator--reviewer-quick-start)
 
 ---
 
@@ -445,6 +446,53 @@ This section maps each use case to the screens and backend logic that implement 
 
 ---
 
+## Reviewer Quick Start
+
+This section is to verify the project end-to-end (backend + mobile/web) with minimal setup.
+
+### Quick links 
+
+- Backend (Railway) base URL: https://web-production-c7c1.up.railway.app
+- Backend docs (Swagger): https://web-production-c7c1.up.railway.app/docs
+- Backend health: https://web-production-c7c1.up.railway.app/health
+- Web app (Vercel) live URL: https://bari-tawny.vercel.app/
+- Web app (Vercel) source: deployed from `mobile/react_native_app/` (see Section **3. Web App (Vercel)** below)
+- Expo EAS build dashboard: https://expo.dev/accounts/niteka/projects/anemia-screening/builds
+
+**Vercel deployment note:** if the live URL changes, moderators can retrieve it from the Vercel project dashboard → **Deployments**.
+
+**Reference (latest verified dev build in this workspace):**
+
+- Build page: https://expo.dev/accounts/niteka/projects/anemia-screening/builds/032caed8-d1a1-4619-89fc-f4e41fcb0643
+- Direct APK artifact: https://expo.dev/artifacts/eas/oJH6rg3pMmMDEstEHQPae.apk
+
+> Note: Expo artifact URLs can expire; the build dashboard is the canonical place to download artifacts and view logs.
+
+### Reviewer checklist
+
+1) Run backend locally and open `http://127.0.0.1:8000/docs`
+
+2) Run the mobile app locally using Expo Go (`npx expo start --tunnel`)
+
+3) (Optional) Install the dev-client APK and start Metro in dev-client mode (`npx expo start --dev-client`)
+
+4) Run backend tests (`python -m pytest tests/ -v`)
+
+### EAS build troubleshooting (Windows tar permission error)
+
+If an EAS build fails during **PREPARE_PROJECT** with messages like `tar: ... Cannot mkdir: Permission denied`, it is usually caused by Windows directories being marked **ReadOnly**.
+
+From the repo root, clear ReadOnly attributes and rebuild:
+
+```powershell
+attrib -R mobile /S /D
+attrib -R .github /S /D
+attrib -R .vscode /S /D
+attrib -R .pytest_cache /S /D
+```
+
+Then run the build from inside `mobile/react_native_app`.
+
 ## Running the Application
 
 ### 1. Backend (FastAPI)
@@ -466,15 +514,32 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 # Set required environment variables
+# Linux / macOS
 export API_KEY=your-api-key
-export SUPABASE_URL=https://your-project.supabase.co
-export SUPABASE_ANON_KEY=your-anon-key
+
+# (Optional) local-only convenience: start even if API_KEY isn't set.
+# Do NOT use this in production.
+export ALLOW_INSECURE_DEFAULT_API_KEY=true
 
 # Run (development)
 uvicorn app.main:app --reload --port 8000
 
 # Run (production)
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+```
+
+**Windows (PowerShell) environment variables:**
+
+```powershell
+$env:API_KEY = "your-api-key"
+$env:ALLOW_INSECURE_DEFAULT_API_KEY = "true"  # optional local-only convenience
+```
+
+**Windows (cmd.exe) environment variables:**
+
+```bat
+set API_KEY=your-api-key
+set ALLOW_INSECURE_DEFAULT_API_KEY=true
 ```
 
 API docs available at:
@@ -502,6 +567,16 @@ cp .env.example .env
 
 # Start development server (tunnel mode for physical device)
 npx expo start --tunnel
+```
+
+If you're on Windows and `cp` isn't available:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+```bat
+copy .env.example .env
 ```
 
 Scan the QR code shown in the terminal with the **Expo Go** app (Android or iOS).
@@ -552,6 +627,11 @@ API_KEY
 
 The APK is built via EAS Build (Expo Application Services) in the cloud.
 
+**Important:** EAS uploads the directory you run it from.
+
+- Recommended: run EAS from `mobile/react_native_app/` so only the app is archived.
+- If you run EAS from the repo root, the root `.easignore` controls what gets uploaded.
+
 ```bash
 cd mobile/react_native_app
 
@@ -561,11 +641,32 @@ npm install -g eas-cli
 # Log in to Expo account
 npx eas login
 
+# Build development APK (dev client)
+# Use this when you want a custom dev build (not Expo Go).
+npx eas build --profile development --platform android
+
 # Build preview APK (internal distribution)
 npx eas build --profile preview --platform android
 
 # Build production AAB (for Play Store)
 npx eas build --profile production --platform android
+```
+
+After installing a **development (dev-client)** APK, start Metro like this:
+
+```bash
+cd mobile/react_native_app
+npx expo start --dev-client
+```
+
+Useful EAS commands:
+
+```bash
+# View a build in the browser
+eas build:view <build-id>
+
+# Download/view logs in the CLI
+eas build:logs <build-id>
 ```
 
 Track builds at: https://expo.dev/accounts/niteka/projects/anemia-screening/builds

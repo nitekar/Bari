@@ -71,7 +71,7 @@ async def predict_multimodal_endpoint(
     gender: int = Form(..., ge=0, le=1, description="0=Male | 1=Female"),
     hb_level: float | None = Form(None, ge=0, le=25, description="Optional measured Hb in g/dL."),
 ) -> Any:
-    reg = request.app.state.registry
+    reg = getattr(request.app.state, "registry", {})
 
     if reg.get("visual_interp") is None:
         raise HTTPException(503, "Visual model not loaded.")
@@ -200,7 +200,7 @@ async def predict_multimodal_endpoint(
     summary="Quick binary screen (Anemic / Non-Anemic) from image only",
 )
 async def predict_image_endpoint(request: Request, file: UploadFile = File(...)) -> Any:
-    reg = request.app.state.registry
+    reg = getattr(request.app.state, "registry", {})
 
     if reg.get("visual_interp") is None:
         raise HTTPException(503, "Visual model not loaded.")
